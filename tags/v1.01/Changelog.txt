@@ -1,0 +1,7 @@
+**1.01**
+* Release date: 09/07/2016
+* Bug fix, occasionally items Already know would be listed as Not Collected due to slow response in retrieving item information. I've increased retry attempts to retrieve item information for filters to avoid inaccurate results. Should an item still fail during filtering a chat message will be shown.
+
+**1.0**
+* Release date: 09/05/2016
+* Intial release.
