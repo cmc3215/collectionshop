@@ -880,7 +880,7 @@ NS.AuctionGroup_AuctionMissing = function( groupKey, OnMessageOnly )
 			-- Remove auctions(5) that match by itemPrice(1) and itemLink(2) from scan data
 			auction = 1;
 			while auction <= #scanAuctions do
-				if #NS.auction.data.groups == 0 then return end -- Check for Reset
+				if NS.scan.status ~= "scanning" and NS.scan.status ~= "buying" then return end -- Check for Reset
 				--
 				if scanAuctions[auction][1] == itemPrice and ( itemId == 82800 and scanAuctions[auction][2] or NS.NormalizeItemLink( scanAuctions[auction][2] ) ) == itemLink then
 					table.remove( scanAuctions, auction ); -- Remove auction from scan data
@@ -892,7 +892,7 @@ NS.AuctionGroup_AuctionMissing = function( groupKey, OnMessageOnly )
 		-- Remove auctions(5) that match by itemPrice(1) and itemLink(2) or itemId(6) from group
 		auction = 1;
 		while auction <= #groupAuctions do
-			if #NS.auction.data.groups == 0 then return end -- Check for Reset
+			if NS.scan.status ~= "scanning" and NS.scan.status ~= "buying" then return end -- Check for Reset
 			--
 			if groupAuctions[auction][1] ~= itemPrice then break end -- Auctions in a group are sorted by itemPrice(1) ASC, so once we exceed itemPrice we won't find any matches
 			--
@@ -925,6 +925,7 @@ NS.AuctionGroup_AuctionMissing = function( groupKey, OnMessageOnly )
 	end
 	--
 	RemovalComplete = function()
+		NS.scan.status = "ready";
 		if removed == "group" then
 			-- Group removed
 			NS.AuctionGroup_Deselect();
@@ -1105,7 +1106,7 @@ NS.AuctionDataGroups_Filter = function( groupKey, FilterFunction, OnGroupsComple
 	local groupKey = not groupKeyList and groupKey or nil;
 	--
 	NextGroup = function()
-		if #NS.auction.data.groups == 0 then return OnGroupsComplete(); end -- Check for Reset
+		if NS.scan.status ~= "scanning" and NS.scan.status ~= "buying" then return end -- Check for Reset
 		--
 		if groupKey <= groupKeyStop then
 			if not groupKeyList or groupKeyList[groupKey] then
@@ -1142,8 +1143,8 @@ NS.AuctionDataGroups_Filter = function( groupKey, FilterFunction, OnGroupsComple
 					groupBatchRetry.attempts = groupBatchRetry.attempts + 1;
 					groupKey = ( groupKey - groupBatchNum ) + 1; -- Reset groupKey to start of batch for retry
 					groupBatchNum = 1;
-					local after = ( 0.0005 * groupBatchRetry.attempts ) * groupBatchRetry.count;
-					return C_Timer.After( after >= 0.001 and after or 0.001, NextGroup );
+					local after = groupBatchRetry.attempts * 0.01;
+					return C_Timer.After( after, NextGroup );
 				else
 					-- No Batch Retry
 					groupBatchRetry.inProgress = false;
@@ -1165,7 +1166,7 @@ NS.AuctionDataGroups_Filter = function( groupKey, FilterFunction, OnGroupsComple
 	end
 	--
 	GroupsComplete = function()
-		if #NS.auction.data.groups == 0 then return OnGroupsComplete(); end -- Check for Reset
+		if NS.scan.status ~= "scanning" and NS.scan.status ~= "buying" then return end -- Check for Reset
 		if filter == "analyze" then return OnGroupsComplete( filterGroups ); end -- DO NOT REMOVE GROUPS - Just return for analysis
 		--
 		local groupsRemoved = 0;
@@ -1199,7 +1200,7 @@ NS.AuctionDataGroups_Filter = function( groupKey, FilterFunction, OnGroupsComple
 	groupKey = groupKeyStart;
 	groupBatchNum = 1;
 	groupBatchSize = 50;
-	groupBatchRetry = { inProgress = false, count = 0, attempts = 0, attemptsMax = 5000, groupBatchNum = {} };
+	groupBatchRetry = { inProgress = false, count = 0, attempts = 0, attemptsMax = 50, groupBatchNum = {} };
 	filterGroups = {};
 	NextGroup();
 end
@@ -1578,8 +1579,8 @@ function NS.scan:QueryPageRetrieve()
 				auctionBatchRetry.inProgress = true;
 				auctionBatchRetry.attempts = auctionBatchRetry.attempts + 1;
 				auctionBatchNum = 1;
-				local after = ( 0.0005 * auctionBatchRetry.attempts ) * auctionBatchRetry.count;
-				return C_Timer.After( after >= 0.001 and after or 0.001, NextAuction );
+				local after = auctionBatchRetry.attempts * 0.01;
+				return C_Timer.After( after, NextAuction );
 			else
 				-- No Batch Retry
 				return PageComplete();
@@ -1617,7 +1618,7 @@ function NS.scan:QueryPageRetrieve()
 		PageComplete();
 	else
 		auctionBatchNum = 1;
-		auctionBatchRetry = { inProgress = false, count = 0, attempts = 0, attemptsMax = 10, auctionBatchNum = {} };
+		auctionBatchRetry = { inProgress = false, count = 0, attempts = 0, attemptsMax = 50, auctionBatchNum = {} };
 		NextAuction();
 	end
 end
@@ -1653,8 +1654,8 @@ function NS.scan:QueryGetAllRetrieve()
 					auctionBatchRetry.attempts = auctionBatchRetry.attempts + 1;
 					auctionNum = ( auctionNum - auctionBatchNum ) + 1; -- Reset auctionNum to start of batch for retry
 					auctionBatchNum = 1;
-					local after = ( 0.0005 * auctionBatchRetry.attempts ) * auctionBatchRetry.count;
-					return C_Timer.After( after >= 0.001 and after or 0.001, NextAuction );
+					local after = auctionBatchRetry.attempts * 0.01;
+					return C_Timer.After( after, NextAuction );
 				else
 					-- NotRequired/Stop/Reset Batch Retry
 					auctionBatchRetry.inProgress = false;
@@ -1678,7 +1679,7 @@ function NS.scan:QueryGetAllRetrieve()
 	auctionNum = 1;
 	auctionBatchNum = 1;
 	auctionBatchSize = 50;
-	auctionBatchRetry = { inProgress = false, count = 0, attempts = 0, attemptsMax = 10, auctionBatchNum = {} };
+	auctionBatchRetry = { inProgress = false, count = 0, attempts = 0, attemptsMax = 50, auctionBatchNum = {} };
 	NextAuction();
 end
 --
@@ -1892,25 +1893,8 @@ end
 --
 function NS.scan:Complete( cancelMessage )
 	if self.status ~= "scanning" then return end -- Scan interrupted
-	self.status = "ready"; -- Set to default status, successful SELECT scans become "selected" below
 	--
-	if self.type == "SHOP" then
-		-- SHOP: Clicked the "Shop" button
-		wipe( self.query.queue );
-		wipe( NS.auction.data.live );
-		--
-		collectgarbage( "collect" );
-		NS.AuctionDataGroups_Sort();
-		AuctionFrameCollectionShop_JumbotronFrame:Hide();
-		AuctionFrameCollectionShop_ScrollFrame:Update();
-		--
-		if #NS.auction.data.groups > 0 then
-			NS.StatusFrame_Message( NS.SELECT_AN_AUCTION() );
-			AuctionFrameCollectionShop_BuyAllButton:Enable();
-		else
-			NS.StatusFrame_Message( cancelMessage or L["No auctions were found that matched your settings"] );
-		end
-	elseif self.type == "SELECT" then
+	if self.type == "SELECT" then
 		-- SELECT: If not found, remove auction. Otherwise, set status to "Selected" and activate buyout frame
 		if not self.query.auction.found then
 			-- NOT FOUND
@@ -1980,8 +1964,26 @@ function NS.scan:Complete( cancelMessage )
 			NS.BuyoutFrame_Activate();
 			AuctionFrameCollectionShop_BuyAllButton:Enable();
 		end
+	elseif self.type == "SHOP" then
+		-- SHOP: Clicked the "Shop" button
+		self.status = "ready";
+		wipe( self.query.queue );
+		wipe( NS.auction.data.live );
+		--
+		collectgarbage( "collect" );
+		NS.AuctionDataGroups_Sort();
+		AuctionFrameCollectionShop_JumbotronFrame:Hide();
+		AuctionFrameCollectionShop_ScrollFrame:Update();
+		--
+		if #NS.auction.data.groups > 0 then
+			NS.StatusFrame_Message( NS.SELECT_AN_AUCTION() );
+			AuctionFrameCollectionShop_BuyAllButton:Enable();
+		else
+			NS.StatusFrame_Message( cancelMessage or L["No auctions were found that matched your settings"] );
+		end
 	elseif self.type == "GETALL" then
 		-- GETALL: Clicked the "Scan" button
+		self.status = "ready";
 		collectgarbage( "collect" );
 		if ( CanSendAuctionQuery() ) then
 			QueryAuctionItems( "CLEAR_BROWSE_FRAME_RESULTS", nil, nil, 0, false, nil, false, false, nil ); -- Prevents WoW from crashing on subsequent queries, not sure why
@@ -2036,7 +2038,7 @@ function NS.scan:OnUIErrorMessage( ... ) -- UI_ERROR_MESSAGE
 		return -- Ignore errors unexpected during buying an auction
 	end
 	--
-	self.status = "ready"; -- buying failed
+	-- Handle error expected when buying an auction
 	--
 	CollectionShopEventsFrame:UnregisterEvent( "CHAT_MSG_SYSTEM" );
 	--
@@ -2054,6 +2056,7 @@ function NS.scan:OnUIErrorMessage( ... ) -- UI_ERROR_MESSAGE
 			AuctionFrameCollectionShop_ShopButton:Enable();
 		end );
 	else
+		self.status = "ready";
 		NS.StatusFrame_Message( arg2 );
 		AuctionFrameCollectionShop_BuyAllButton:Enable();
 	end
