@@ -368,8 +368,10 @@ end
 for k, v in pairs( NS.toyInfo ) do
 	NS.toyItemIds[#NS.toyItemIds + 1] = k;
 end
-NS.APPEARANCE_NOT_COLLECTED_COLOR_CODE = "|cff88aaff";
 NS.TRANSMOGRIFY_FONT_COLOR_CODE = "|c" .. TRANSMOGRIFY_FONT_COLOR:GenerateHexColor();
+if not ITEM_QUALITY_COLORS[-1] then
+	ITEM_QUALITY_COLORS[-1] = { hex="|cff9d9d9d", r=0, g=0, b=0 };
+end
 NS.SELECT_AN_AUCTION = function()
 	return string.format( L["Select an auction to buy or click \"Buy All\""] .. ( NS.mode == "APPEARANCES" and "\n" .. L["%sEach result is the lowest buyout auction for an|r %s"] or "" ), HIGHLIGHT_FONT_COLOR_CODE, NS.modeColorCode .. ( NS.shopAppearancesBy == "appearance" and L["Appearance"] or L["Appearance Source"] ) .. FONT_COLOR_CODE_CLOSE );
 end
