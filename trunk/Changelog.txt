@@ -1,3 +1,7 @@
+**1.03**
+* Release date: 09/09/2016
+* Workaround added for Blizzard Auction House bug: Blizzard_AuctionUI.lua:733: attempt to index local 'color' (a nil value)
+
 **1.02**
 * Release date: 09/08/2016
 * Bug fix, rare LUA error on slow connections caused by previous increase in filter retry attempts.
