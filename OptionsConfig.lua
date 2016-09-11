@@ -39,11 +39,19 @@ NS.options.cfg = {
 					tooltip = string.format( L["Remind me to use or\nequip auctions I've won\nafter leaving %s."], NS.title ),
 					db = "auctionsWonReminder",
 				} );
-				NS.TextFrame( "MaxItemPriceLabel", SubFrame, string.format( L["Max Item Prices: %sHide auctions above this Item Price, 0 to show all.|r"], HIGHLIGHT_FONT_COLOR_CODE ), {
+				NS.TextFrame( "MaxItemPriceLabel", SubFrame, L["Max Item Prices"], {
 					setPoint = {
 						{ "TOPLEFT", "#sibling", "BOTTOMLEFT", 4, -8 },
-						{ "RIGHT", 0 },
+						{ "RIGHT", -8 },
 					},
+					fontObject = "GameFontHighlight"
+				} );
+				NS.TextFrame( "MaxItemPriceInfo", SubFrame, L["Hide auctions above this Item Price, 0 to show all."], {
+					setPoint = {
+						{ "TOPLEFT", "#sibling", "BOTTOMLEFT", 0, -4 },
+						{ "RIGHT", -8 },
+					},
+					fontObject = "GameFontNormalSmall"
 				} );
 				for i = 1, #NS.modes do
 					NS.InputBox( "MaxItemPriceMode" .. i .. "Editbox", SubFrame, {
@@ -70,7 +78,7 @@ NS.options.cfg = {
 							local copper = self:GetNumber() * 10000; -- Convert gold to copper
 							if copper ~= NS.db["maxItemPriceCopper"][NS.modes[i]] then
 								NS.db["maxItemPriceCopper"][NS.modes[i]] = copper;
-								if NS.mode == NS.modes[i] and AuctionFrameCollectionShop and AuctionFrameCollectionShop:IsShown() then
+								if NS.mode == NS.modes[i] and NS.IsTabShown() then
 									NS.Reset(); -- Reset, option changed
 								end
 							end
@@ -81,6 +89,59 @@ NS.options.cfg = {
 						setPoint = { "LEFT", "#sibling", "RIGHT", 3, 0 },
 					} );
 				end
+				NS.TextFrame( "TSMItemValueSourceLabel", SubFrame, L["Item Value Source"], {
+					setPoint = {
+						{ "TOPLEFT", "$parentMaxItemPriceMode4Editbox", "BOTTOMLEFT", -4, -8 },
+						{ "RIGHT", -8 },
+					},
+					fontObject = "GameFontHighlight",
+				} );
+				NS.TextFrame( "TSMItemValueSourceInfo", SubFrame, L["TradeSkillMaster price source or custom price source. For a list of price sources type /tsm sources."], {
+					setPoint = {
+						{ "TOPLEFT", "#sibling", "BOTTOMLEFT", 0, -4 },
+						{ "RIGHT", -8 },
+					},
+					fontObject = "GameFontNormalSmall",
+				} );
+				NS.InputBox( "TSMItemValueSourceEditbox", SubFrame, {
+					size = { 190, 20 },
+					setPoint = { "TOPLEFT", "#sibling", "BOTTOMLEFT", 4, -4 },
+					maxLetters = 50,
+					OnEnterPressed = function( self )
+						self:ClearFocus();
+					end,
+					OnEditFocusGained = function( self )
+						self:HighlightText();
+					end,
+					OnEditFocusLost = function( self )
+						self:HighlightText( 0, 0 );
+						local source = self:GetText();
+						if source ~= NS.db["tsmItemValueSource"] then
+							-- Validate Source
+							if TSMAPI and source ~= "" then
+								NS.tsmPriceSources = TSMAPI:GetPriceSources(); -- TSM Price SOurces
+								if not NS.tsmPriceSources[source] then
+									if not TSMAPI:ValidateCustomPrice( source ) then
+										NS.Print( RED_FONT_COLOR_CODE .. L["Not a valid price source or custom price source."] .. FONT_COLOR_CODE_CLOSE );
+									end
+								end
+							end
+							--
+							NS.db["tsmItemValueSource"] = source; -- Always update source regardless of validity
+							NS.adjustScrollFrame = true; -- Always adjust when changed regardless of whether it's required
+							if NS.IsTabShown() then
+								NS.Reset(); -- Reset, option changed
+							end
+						end
+					end,
+				} );
+				NS.TextFrame( "TSMItemValueSourceInfo2", SubFrame, L["(adds Item Value % column to results, leave blank to disable)"], {
+					setPoint = {
+						{ "LEFT", "#sibling", "RIGHT", 8, 0 },
+						{ "RIGHT", -8 },
+					},
+					fontObject = "GameFontNormalSmall",
+				} );
 			end,
 			Refresh			= function( SubFrame )
 				local sfn = SubFrame:GetName();
@@ -88,6 +149,7 @@ NS.options.cfg = {
 				for i = 1, #NS.modes do
 					_G[sfn .. "MaxItemPriceMode" .. i .. "Editbox"]:SetNumber( NS.db["maxItemPriceCopper"][NS.modes[i]] / 10000 ); -- Convert copper to gold
 				end
+				_G[sfn .. "TSMItemValueSourceEditbox"]:SetText( NS.db["tsmItemValueSource"] );
 			end,
 		},
 		{
@@ -151,8 +213,8 @@ NS.options.cfg = {
 										b:LockHighlight();
 									end );
 									_G[bn .. "_Name"]:SetScript( "OnLeave", function() GameTooltip_Hide(); b:UnlockHighlight(); end );
-									_G[bn .. "_Mode"]:SetText( NS.modeColorCodes[items[k].modeNum] .. NS.modeNames[items[k].modeNum] .. FONT_COLOR_CODE_CLOSE );
-									MoneyFrame_Update( bn .. "_ItemPrice_SmallMoneyFrame", items[k][1] ); -- itemPrice(1)
+									_G[bn .. "_ModeText"]:SetText( NS.modeColorCodes[items[k].modeNum] .. NS.modeNames[items[k].modeNum] .. FONT_COLOR_CODE_CLOSE );
+									MoneyFrame_Update( bn .. "_ItemPriceSmallMoneyFrame", items[k][1] ); -- itemPrice(1)
 									b:Show();
 								else
 									b:Hide();
@@ -220,6 +282,7 @@ NS.options.cfg = {
 						end
 						-- Delete
 						NS.db["getAllScan"][data["realmName"]] = nil;
+						collectgarbage( "collect" );
 						NS.Print( RED_FONT_COLOR_CODE .. string.format( L["GetAll scan data deleted: %s"], data["realmName"] ) .. FONT_COLOR_CODE_CLOSE );
 						-- Refresh
 						SubFrame:Refresh();

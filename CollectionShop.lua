@@ -23,7 +23,7 @@ NS.modeColorCode = nil;
 --
 NS.mountCollection = {};
 NS.petCollection = {};
-NS.toysCollection = {};
+NS.toyCollection = {};
 NS.transmogCollection = {};
 NS.updatingTransmogCollection = false;
 NS.shopAppearancesBy = nil; -- appearance, source
@@ -42,6 +42,9 @@ NS.numAuctionsWon = 0;
 NS.copperAuctionsWon = 0;
 NS.auctionsWon = {};
 --
+NS.adjustScrollFrame = true;
+NS.isPctItemValue = nil; -- Set in ScrollFrame:Adjust()
+NS.tsmPriceSources = nil;
 NS.NextAdjustScroll = false;
 NS.disableFlyoutChecks = false;
 NS.buyAll = false;
@@ -77,46 +80,46 @@ for i = 1, #NS.ridingSpells do
 end
 NS.cachedDressUpIds = {};
 NS.mountInfo = {
-	-- Updated 08/30/2016
-	--[mountItemId] = creatureID (+pos) or displayID (-neg)
-	[137686] = -70099, -- Steelbound Harness
-	[82453] = 61652, -- Jeweled Onyx Panther
-	[83087] = 62458, -- Ruby Panther
-	[83088] = 62461, -- Jade Panther
-	[83089] = 62460, -- Sunstone Panther
-	[83090] = 62459, -- Sapphire Panther
-	[65891] = 50269, -- Vial of the Sands
-	[95416] = -46686, -- Sky Golem
-	[41508] = 29045, -- Mechano-Hog
-	[44413] = 29046, -- Mekgineer's Chopper
-	[67151] = 53270, -- Reins of Poseidus
-	[34061] = 24654, -- Turbo-Charged Flying Machine
-	[49286] = 26164, -- X-51 Nether-Rocket X-TREME
-	[54069] = 40165, -- Blazing Hippogryph
-	[68008] = 50467, -- Mottled Drake
-	[68825] = 52185, -- Amani Dragonhawk
-	[72582] = 54903, -- Corrupted Hippogryph
-	[79771] = 59072, -- Feldrake
-	[93671] = 69219, -- Ghastly Charger's Skull
-	[34060] = 24418, -- Flying Machine
-	[44554] = 25460, -- Flying Carpet
-	[49285] = 26192, -- X-51 Nether-Rocket
-	[87250] = 64715, -- Depleted-Kyparium Rocket
-	[87251] = 64716, -- Geosynchronous World Spinner
-	[49282] = 28363, -- Big Battle Bear
-	[49284] = 24004, -- Reins of the Swift Spectral Tiger
-	[49290] = 34655, -- Magic Rooster Egg
-	[54068] = 40191, -- Wooly White Rhino
-	[116794] = 86480, -- Garn Nighthowl
-	[128311] = -64426, -- Coalfist Gronnling
-	[128671] = -64960, -- Minion of Grumpus
-	[52200] = 26585, -- Reins of the Crimson Deathcharger
-	[69228] = 52813, -- Savage Raptor
-	[71718] = 54423, -- Swift Shorestrider
-	[72145] = 54741, -- Swift Springstrider
-	[72146] = 3068, -- Swift Lovebird
-	[72575] = 54879, -- White Riding Camel
-	[49283] = 24003, -- Reins of the Spectral Tiger
+	-- Updated 09/11/2016
+	--[mountItemId] = { displayID, spellID } -- creatureName -- itemName
+	[71718] = { 17011, 101573 }, -- Swift Shorestrider -- Swift Shorestrider
+	[52200] = { 25279, 73313 }, -- Crimson Deathcharger -- Reins of the Crimson Deathcharger
+	[34060] = { 22719, 44153 }, -- Flying Machine -- Flying Machine
+	[79771] = { 40568, 113120 }, -- Feldrake -- Feldrake
+	[128671] = { 64960, 191314 }, -- Minion of Grumpus -- Minion of Grumpus
+	[41508] = { 25871, 55531 }, -- Mechano-Hog -- Mechano-Hog
+	[82453] = { 42185, 120043 }, -- Jeweled Onyx Panther -- Jeweled Onyx Panther
+	[83087] = { 42499, 121838 }, -- Ruby Panther -- Ruby Panther
+	[72582] = { 38972, 102514 }, -- Corrupted Hippogryph -- Corrupted Hippogryph
+	[72145] = { 16992, 102349 }, -- Swift Springstrider -- Swift Springstrider
+	[54069] = { 31803, 74856 }, -- Blazing Hippogryph -- Blazing Hippogryph
+	[49283] = { 21973, 42776 }, -- Spectral Tiger -- Reins of the Spectral Tiger
+	[49285] = { 23656, 46197 }, -- X-51 Nether-Rocket -- X-51 Nether-Rocket
+	[95416] = { 46686, 134359 }, -- Sky Golem -- Sky Golem
+	[69228] = { 38048, 97581 }, -- Savage Raptor -- Savage Raptor
+	[87250] = { 43637, 126507 }, -- Depleted-Kyparium Rocket -- Depleted-Kyparium Rocket
+	[72575] = { 37204, 102488 }, -- White Riding Camel -- White Riding Camel
+	[34061] = { 22720, 44151 }, -- Turbo--Charged Flying Machine -- Turbo-Charged Flying Machine
+	[72146] = { 1961, 102350 }, -- Swift Lovebird -- Swift Lovebird
+	[83088] = { 42502, 121837 }, -- Jade Panther -- Jade Panther
+	[128311] = { 64426, 189364 }, -- Coalfist Gronnling -- Coalfist Gronnling
+	[116794] = { 54114, 171851 }, -- Garn Nighthowl -- Garn Nighthowl
+	[68008] = { 37231, 93623 }, -- Mottled Drake -- Mottled Drake
+	[93671] = { 48014, 136505 }, -- Ghastly Charger -- Ghastly Charger's Skull
+	[65891] = { 35750, 93326 }, -- Sandstone Drake -- Vial of the Sands
+	[44413] = { 25870, 60424 }, -- Mekgineer's Chopper -- Mekgineer's Chopper
+	[49286] = { 23647, 46199 }, -- X-51 Nether-Rocket X-TREME -- X-51 Nether-Rocket X-TREME
+	[68825] = { 37800, 96503 }, -- Amani Dragonhawk -- Amani Dragonhawk
+	[83089] = { 42501, 121839 }, -- Sunstone Panther -- Sunstone Panther
+	[87251] = { 43638, 126508 }, -- Geosynchronous World Spinner -- Geosynchronous World Spinner
+	[137686] = { 70099, 213209 }, -- Steelbound Devourer -- Steelbound Harness
+	[44554] = { 28082, 61451 }, -- Flying Carpet -- Flying Carpet
+	[83090] = { 42500, 121836 }, -- Sapphire Panther -- Sapphire Panther
+	[54068] = { 31721, 74918 }, -- Wooly White Rhino -- Wooly White Rhino
+	[49282] = {	25335, 51412 }, -- Big Battle Bear -- Big Battle Bear
+	[49284] = { 21974, 42777 }, -- Swift Spectral Tiger -- Reins of the Swift Spectral Tiger
+	[67151] = { 34955, 98718 }, -- Subdued Seahorse -- Reins of Poseidus
+	[49290] = { 34655, 65917 }, -- Magic Rooster -- Magic Rooster Egg
 };
 NS.petInfo = {
 	-- Updated 08/30/2016
@@ -375,6 +378,7 @@ end
 NS.SELECT_AN_AUCTION = function()
 	return string.format( L["Select an auction to buy or click \"Buy All\""] .. ( NS.mode == "APPEARANCES" and "\n" .. L["%sEach result is the lowest buyout auction for an|r %s"] or "" ), HIGHLIGHT_FONT_COLOR_CODE, NS.modeColorCode .. ( NS.shopAppearancesBy == "appearance" and L["Appearance"] or L["Appearance Source"] ) .. FONT_COLOR_CODE_CLOSE );
 end
+
 --------------------------------------------------------------------------------------------------------------------------------------------
 -- Default SavedVariables/PerCharacter & Upgrade
 --------------------------------------------------------------------------------------------------------------------------------------------
@@ -387,6 +391,7 @@ NS.DefaultSavedVariables = function()
 		["live"] = false,
 		["auctionsWonReminder"] = true,
 		["maxItemPriceCopper"] = { [NS.modes[1]] = 0, [NS.modes[2]] = 0, [NS.modes[3]] = 0, [NS.modes[4]] = 0 },
+		["tsmItemValueSource"] = "",
 		["modeFilters"] = { [NS.modes[1]] = {}, [NS.modes[2]] = {}, [NS.modes[3]] = {}, [NS.modes[4]] = {} },
 	};
 end
@@ -400,10 +405,10 @@ end
 NS.Upgrade = function()
 	local vars = NS.DefaultSavedVariables();
 	local version = NS.db["version"];
-	-- 1.01
-	--if version < 1.01 then
-		-- Do upgrade
-	--end
+	-- 1.04
+	if version < 1.04 then
+		NS.db["tsmItemValueSource"] = vars["tsmItemValueSource"]; -- New db variable
+	end
 	--
 	table.insert( NS.playerLoginMsg, string.format( L["Upgraded version %s to %s"], version, NS.version ) );
 	NS.db["version"] = NS.version;
@@ -412,8 +417,8 @@ end
 NS.UpgradePerCharacter = function()
 	local varspercharacter = NS.DefaultSavedVariablesPerCharacter();
 	local version = NS.dbpc["version"];
-	-- 1.01
-	--if version < 1.01 then
+	-- 1.04
+	--if version < 1.04 then
 		-- Do upgrade
 	--end
 	--
@@ -499,6 +504,14 @@ NS.AuctionFrameTab_OnClick = function( self, button, down, index ) -- AuctionFra
 	end
 end
 --
+NS.IsTabShown = function()
+	if AuctionFrameCollectionShop and AuctionFrame:IsShown() and PanelTemplates_GetSelectedTab( AuctionFrame ) == NS.AuctionFrameTab:GetID() then
+		return true;
+	else
+		return false;
+	end
+end
+--
 NS.SideDressUpModelCloseButton_OnClick = function()
 	if AuctionFrameCollectionShop and AuctionFrameCollectionShop:IsShown() then
 		AuctionFrameCollectionShop_FlyoutPanel:Reset();
@@ -518,10 +531,11 @@ NS.Reset = function( filterOnClick )
 		NS.updatingTransmogCollection = false;
 		wipe( NS.transmogCollection );
 	end
-	if not AuctionFrame:IsShown() or not AuctionFrameCollectionShop:IsShown() then -- Stop monitoring spec and UI errors and reset buyout tracking when tab is changed or Auction House closed
+	if AuctionFrame and not NS.IsTabShown() then -- Stop monitoring spec and UI errors, unset mode, and reset buyout tracking when tab is changed or Auction House closed
 		CollectionShopEventsFrame:UnregisterEvent( "PLAYER_SPECIALIZATION_CHANGED" );
 		CollectionShopEventsFrame:UnregisterEvent( "INSPECT_READY" );
 		CollectionShopEventsFrame:UnregisterEvent( "UI_ERROR_MESSAGE" );
+		NS.SetMode( nil, "noReset" );
 		if NS.numAuctionsWon > 0 and NS.db["auctionsWonReminder"] then
 			NS.Print( RED_FONT_COLOR_CODE .. string.format( L["Remember when leaving %s to equip or use auctions won to update your Collections for future Shop results."], NS.title ) .. FONT_COLOR_CODE_CLOSE );
 		end
@@ -530,7 +544,7 @@ NS.Reset = function( filterOnClick )
 		wipe( NS.auctionsWon );
 		wipe( NS.mountCollection );
 		wipe( NS.petCollection );
-		wipe( NS.toysCollection );
+		wipe( NS.toyCollection );
 		if NS.options.MainFrame:IsShown() then
 			NS.options.MainFrame:Hide(); -- Close options frame, prevents errors on Buyouts tab
 		end
@@ -547,11 +561,18 @@ NS.Reset = function( filterOnClick )
 	else
 		AuctionFrameCollectionShop_UndressCharacterCheckButton:Hide();
 	end
+	if NS.adjustScrollFrame then
+		AuctionFrameCollectionShop_ScrollFrame:Adjust(); -- Must go before sort buttons to set NS.isPctItemValue
+	end
 	if NS.mode then
 		NS.AuctionSortButtons_Action( "Show" );
 		NS.AuctionSortButtons_Action( "Arrow:Hide" );
 		NS.AuctionSortButtons_Action( "Enable" );
-		AuctionFrameCollectionShop_ItemPriceSortButton:Click();
+		if NS.isPctItemValue then
+			AuctionFrameCollectionShop_PctItemValueSortButton:Click();
+		else
+			AuctionFrameCollectionShop_ItemPriceSortButton:Click();
+		end
 	else
 		NS.AuctionSortButtons_Action( "Hide" );
 	end
@@ -578,6 +599,9 @@ end
 --
 NS.AuctionSortButtons_Action = function( action )
 	local buttons = { "Name", "Lvl", "Category", "ItemPrice" };
+	if NS.isPctItemValue then
+		buttons[#buttons + 1] = "PctItemValue"; -- % Item Value
+	end
 	for i = 1, #buttons do
 		local button = _G["AuctionFrameCollectionShop_" .. buttons[i] .. "SortButton"];
 		local arrow = _G[button:GetName() .. "Arrow"];
@@ -605,7 +629,7 @@ NS.JumbotronFrame_Message = function( text )
 	AuctionFrameCollectionShop_JumbotronFrame:Show();
 end
 --
-NS.SetMode = function( mode )
+NS.SetMode = function( mode, noReset )
 	NS.mode = mode and NS.modes[mode] or nil;
 	NS.modeName = mode and NS.modeNames[mode] or nil;
 	NS.modeColorCode = mode and NS.modeColorCodes[mode] or nil;
@@ -761,10 +785,24 @@ NS.SetMode = function( mode )
 		AuctionFrameCollectionShop_FlyoutPanel_ToggleCategories:SetText( L["Toggle Categories"] );
 	end
 	-- Update and/or Reset
-	if NS.mode == "APPEARANCES" and not next( NS.transmogCollection ) then
-		NS.Reset();
-		NS.UpdateTransmogCollection();
-	else
+	if NS.mode == "MOUNTS" then
+		if not next( NS.mountCollection ) then
+			NS.UpdateMountCollection();
+		else
+			NS.Reset();
+		end
+	elseif NS.mode == "TOYS" then
+		if not next( NS.toyCollection ) then
+			NS.UpdateToyCollection();
+		else
+			NS.Reset();
+		end
+	elseif NS.mode == "APPEARANCES" then
+		NS.Reset(); -- Reset before so that the mode screen is visible while updating or if updating is not necessary
+		if not next( NS.transmogCollection ) then
+			NS.UpdateTransmogCollection();
+		end
+	elseif ( not NS.mode and not noReset ) or NS.mode == "PETS" then -- petCollection updated during ImportShopData
 		NS.Reset();
 	end
 end
@@ -1095,9 +1133,11 @@ NS.AuctionDataGroups_UpdateGroup = function( groupKey )
 		NS.auction.data.groups[groupKey][5][1][2] = NS.NormalizeItemLink( NS.auction.data.groups[groupKey][5][1][2] );
 	end
 	-- Update Group
+	local itemValue = NS.isPctItemValue and ( NS.tsmPriceSources[NS.db["tsmItemValueSource"]] and TSMAPI:GetItemValue( NS.auction.data.groups[groupKey][5][1][2], NS.db["tsmItemValueSource"] ) or TSMAPI:GetCustomPriceValue( NS.db["tsmItemValueSource"], NS.auction.data.groups[groupKey][5][1][2] ) ) or nil;
 	NS.auction.data.groups[groupKey][2] = string.match( NS.auction.data.groups[groupKey][5][1][2], "%|h%[(.+)%]%|h" ); -- group name(2) copied from auctions(5), then first auction(1), get name via itemLink(2)
 	NS.auction.data.groups[groupKey][4] = NS.auction.data.groups[groupKey][5][1][1]; -- group itemPrice(4) copied from auctions(5), then first auction(1), then itemPrice(1)
 	NS.auction.data.groups[groupKey][6] = NS.mode == "PETS" and NS.auction.data.groups[groupKey][5][1][9] or NS.auction.data.groups[groupKey][5][1][5]; -- group lvl(6) copied from auctions(5), then first auction(1), then lvl(9) or requiresLevel(5)
+	NS.auction.data.groups[groupKey][7] = ( not itemValue or itemValue == 0 ) and 123456789 or ( ( NS.auction.data.groups[groupKey][4] * 100 ) / itemValue ); -- pctItemValue(7)
 end
 --
 NS.AuctionDataGroups_Filter = function( groupKey, FilterFunction, OnGroupsComplete, filterNotMatch, filter )
@@ -1723,6 +1763,7 @@ function NS.scan:ImportShopData()
 				0,				-- [4] itemPrice
 				{},				-- [5] auctions
 				0,				-- [6] lvl
+				0,				-- [7] pctItemValue
 			};
 		end
 		-- Add data to auction data groups
@@ -1804,7 +1845,7 @@ function NS.scan:ImportShopData()
 						end
 					end
 				elseif NS.mode == "TOYS" then
-					if NS.toysCollection[itemId] and ( ( NS.toysCollection[itemId] == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.toysCollection[itemId] > 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) ) then -- collected(3), Not Collected(1)/Collected(2), key(1)
+					if NS.toyCollection[itemId] and ( ( NS.toyCollection[itemId] == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.toyCollection[itemId] > 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) ) then -- collected(3), Not Collected(1)/Collected(2), key(1)
 						discard = true;
 					end
 				end
@@ -1861,36 +1902,18 @@ function NS.scan:ImportShopData()
 end
 --
 function NS.scan:FilterGroups( OnComplete, groupKey )
-	-- Filter: Red - Already known
+	-- Filter: Red - Crafting Professions
 	NS.AuctionDataGroups_Filter( groupKey, function( group )
-		return NS.FindInTooltip( group[5][1][2], { r=255, g=32, b=32 }, { "^" .. ITEM_SPELL_KNOWN .. "$" }, 4 ); -- auctions(5), first auction(1), itemLink(2)
-	end, function( filterGroups )
-		-- Analyze: Red - Already known; Record Mounts and Toys Collection counts when first seen
-		if ( self.type == "SHOP" and not groupKey ) and ( NS.mode == "MOUNTS" or NS.mode == "TOYS" ) then -- not groupKey makes absolute sure we're dealing with ALL groups, SHOP is just being extra careful for now
-			-- filterGroups only passed when NotCollected and Collected are checked, filter was "analyze".
-			-- This means filterNotMatch is false, filterGroups are Collected (i.e. 1), all others are Not Collected (i.e. 0).
-			local collection = NS.mode == "MOUNTS" and NS.mountCollection or NS.toysCollection;
-			local collected = ( filterGroups and 0 ) or ( ( NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) and 0 ) or ( ( not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] and NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) and 1 );
-			for i = 1, #NS.auction.data.groups do
-				local itemId = NS.auction.data.groups[i][5][1][6]; -- auctions(5), first auction(1), itemId(6)
-				if not collection[itemId] then
-					collection[itemId] = ( filterGroups and NS.FindKeyByValue( filterGroups, i ) ) and 1 or collected;
-				end
-			end
-		end
-		-- Filter: Red - Crafting Professions
+		return NS.FindInTooltip( group[5][1][2], { r=255, g=32, b=32 }, NS.craftingProfessions, 4 ); -- auctions(5), first auction(1), itemLink(2)
+	end, function()
+		-- Filter: Red - Requires Riding Skill
 		NS.AuctionDataGroups_Filter( groupKey, function( group )
-			return NS.FindInTooltip( group[5][1][2], { r=255, g=32, b=32 }, NS.craftingProfessions, 4 ); -- auctions(5), first auction(1), itemLink(2)
+			return NS.FindInTooltip( group[5][1][2], { r=255, g=32, b=32 }, NS.ridingSpells, 4 ); -- auctions(5), first auction(1), itemLink(2)
 		end, function()
-			-- Filter: Red - Requires Riding Skill
-			NS.AuctionDataGroups_Filter( groupKey, function( group )
-				return NS.FindInTooltip( group[5][1][2], { r=255, g=32, b=32 }, NS.ridingSpells, 4 ); -- auctions(5), first auction(1), itemLink(2)
-			end, function()
-				-- Complete
-				return OnComplete();
-			end, false, ( NS.mode == "MOUNTS" and not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][3][1]] or false ) ); -- misc(5), Requires Riding Skill(3), key(1)
-		end, false, ( NS.mode ~= "PETS" and not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][2][1]] ) ); -- misc(5), Requires Profession(2), key(1)
-	end, ( ( NS.mode == "MOUNTS" or NS.mode == "TOYS" ) and ( NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or false ), ( ( NS.mode == "MOUNTS" or NS.mode == "TOYS" ) and ( not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] or not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) or ( ( NS.mode == "MOUNTS" or NS.mode == "TOYS" ) and "analyze" or false ) ) ); -- collected(3), Not Collected(1)/Collected(2), key(1)
+			-- Complete
+			return OnComplete();
+		end, false, ( NS.mode == "MOUNTS" and not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][3][1]] or false ) ); -- misc(5), Requires Riding Skill(3), key(1)
+	end, false, ( NS.mode ~= "PETS" and not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][2][1]] ) ); -- misc(5), Requires Profession(2), key(1)
 end
 --
 function NS.scan:Complete( cancelMessage )
@@ -1919,11 +1942,7 @@ function NS.scan:Complete( cancelMessage )
 				if NS.mode == "MOUNTS" or NS.mode == "PETS" then
 					if NS.mode == "MOUNTS" then
 						-- Mount
-						local dressUpID = NS.mountInfo[self.query.auction[6]] or nil; -- itemId(6)
-						if dressUpID then
-							creatureID = dressUpID > 0 and dressUpID or nil;
-							displayID = not creatureID and math.abs( dressUpID ) or 0;
-						end
+						creatureID,displayID = nil, NS.mountInfo[self.query.auction[6]][1]; -- itemId(6), displayID(1)
 					elseif self.query.auction[6] == 82800 then -- itemId(6)
 						-- Battle Pet
 						creatureID,displayID = GetAuctionItemBattlePetInfo( "list", self.query.auction.index );
@@ -2101,7 +2120,7 @@ function NS.scan:AfterAuctionWon()
 			removeSpecies = true;
 		end
 	elseif NS.mode == "TOYS" then
-		NS.toysCollection[self.query.auction[6]] = 1; -- item(6), collected(1)
+		NS.toyCollection[self.query.auction[6]] = 1; -- item(6), collected(1)
 		if not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] then -- collected(3), Collected(2), key(1)
 			removeGroup = true;
 		end
@@ -2153,8 +2172,36 @@ function NS.scan:AfterAuctionWon()
 	AuctionFrameCollectionShop_ShopButton:Enable();
 end
 --------------------------------------------------------------------------------------------------------------------------------------------
--- Appearances
+-- Mounts, Toys, & Appearances
 --------------------------------------------------------------------------------------------------------------------------------------------
+NS.UpdateMountCollection = function()
+	local addonMountsTotal = NS.Count( NS.mountInfo );
+	local addonmountsUpdated = 0;
+	--
+	local mountIDs = C_MountJournal.GetMountIDs();
+	for i = 1, #mountIDs do
+		local _,spellID,_,_,_,_,_,_,_,_,isCollected = C_MountJournal.GetMountInfoByID( mountIDs[i] );
+		local creatureDisplayID = C_MountJournal.GetMountInfoExtraByID( mountIDs[i] );
+		local itemId = NS.PairsFindKeyByField( NS.mountInfo, 2, spellID );
+		if itemId then
+			NS.mountCollection[itemId] = isCollected and 1 or 0;
+			addonmountsUpdated = addonmountsUpdated + 1;
+			if addonmountsUpdated == addonMountsTotal then
+				NS.Print( "Broke after " .. i .. " mounts of " .. #mountIDs );
+				break;
+			end
+		end
+	end
+	NS.Reset();
+end
+--
+NS.UpdateToyCollection = function()
+	for itemId,_ in pairs( NS.toyInfo ) do
+		NS.toyCollection[itemId] = PlayerHasToy( itemId ) and 1 or 0;
+	end
+	NS.Reset();
+end
+--
 NS.GetAppearanceSourceInfo = function( itemLink )
     local _,_,_,invType = GetItemInfoInstant( itemLink );
     local slotId = NS.invTypeToSlotId[invType];
@@ -2327,6 +2374,7 @@ NS.TextFrame( "Text", CollectionShopInterfaceOptionsPanel, L["Use either slash c
 --------------------------------------------------------------------------------------------------------------------------------------------
 NS.Blizzard_AuctionUI_OnLoad = function()
 	if AuctionFrameCollectionShop then return end -- Make absolute sure this code only runs once
+	NS.tsmPriceSources = TSMAPI and TSMAPI:GetPriceSources() or nil; -- TSM Price Sources
 	--
 	NS.Frame( "AuctionFrameCollectionShop", UIParent, {
 		topLevel = true,
@@ -2400,6 +2448,14 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 			NS.AuctionSortButton_OnClick( self, 4 );
 		end,
 	} );
+	NS.Button( "_PctItemValueSortButton", AuctionFrameCollectionShop, L["% Item Value"], {
+		template = "AuctionSortButtonTemplate",
+		size = { 95, 19 },
+		setPoint = { "TOPLEFT", "#sibling", "TOPRIGHT", -2, 0 },
+		OnClick = function( self )
+			NS.AuctionSortButton_OnClick( self, 7 );
+		end,
+	} );
 	NS.ScrollFrame( "_ScrollFrame", AuctionFrameCollectionShop, {
 		size = { 733, ( 30 * 9 - 5 ) },
 		setPoint = { "TOPLEFT", "$parent_NameSortButton", "BOTTOMLEFT", 1, -5 },
@@ -2462,9 +2518,9 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 						end );
 						_G[bn .. "_IconTexture"]:SetScript( "OnLeave", function() GameTooltip_Hide(); if not IsHighlightLocked() then b:UnlockHighlight(); end end );
 						_G[bn .. "_IconTexture"]:SetScript( "OnClick", OnClick );
-						_G[bn .. "_Name"]:SetText( items[k][2] ); -- group name(2)
-						_G[bn .. "_Name"]:SetTextColor( GetItemQualityColor( items[k][5][1][4] ) ); -- auctions(5), first auction(1), quality(4)
-						_G[bn .. "_Lvl"]:SetText( ( NS.mode ~= "PETS" and items[k][6] > NS.linkLevel ) and RED_FONT_COLOR_CODE .. items[k][6] .. FONT_COLOR_CODE_CLOSE or items[k][6] ); -- group lvl(6)
+						_G[bn .. "_NameText"]:SetText( items[k][2] ); -- group name(2)
+						_G[bn .. "_NameText"]:SetTextColor( GetItemQualityColor( items[k][5][1][4] ) ); -- auctions(5), first auction(1), quality(4)
+						_G[bn .. "_LvlText"]:SetText( ( NS.mode ~= "PETS" and items[k][6] > NS.linkLevel ) and RED_FONT_COLOR_CODE .. items[k][6] .. FONT_COLOR_CODE_CLOSE or items[k][6] ); -- group lvl(6)
 						--
 						local category = items[k][3];
 						if NS.mode == "MOUNTS" then
@@ -2473,14 +2529,16 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 							local collected,collectedMax = unpack( NS.petCollection[items[k][5][1][8]] );
 							category = ( collected == 0 and NS.modeColorCode .. category .. FONT_COLOR_CODE_CLOSE ) or ( collected < collectedMax and NORMAL_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE ) or RED_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE;
 						elseif NS.mode == "TOYS" then
-							category = ( NS.toysCollection[items[k][5][1][6]] == 0 and NS.modeColorCode .. category .. FONT_COLOR_CODE_CLOSE ) or RED_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE; -- auctions(5), first auction(1), itemId(6)
+							category = ( NS.toyCollection[items[k][5][1][6]] == 0 and NS.modeColorCode .. category .. FONT_COLOR_CODE_CLOSE ) or RED_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE; -- auctions(5), first auction(1), itemId(6)
 						elseif NS.mode == "APPEARANCES" then
 							local appearanceID, sourceID = items[k][5][1][8], items[k][5][1][9]; -- auctions(5), first auction(1), appearanceID(8), sourceID(9)
 							category = ( not NS.transmogCollection.appearances[appearanceID][2] and NS.modeColorCode .. category .. FONT_COLOR_CODE_CLOSE ) or ( not NS.transmogCollection.sources[sourceID][2] and NORMAL_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE ) or RED_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE; -- isCollected(2)
 						end
-						_G[bn .. "_Category"]:SetText( category ); -- group category(3)
+						_G[bn .. "_CategoryText"]:SetText( category ); -- group category(3)
 						--
-						MoneyFrame_Update( bn .. "_ItemPrice_SmallMoneyFrame", items[k][4] ); -- group itemPrice(4)
+						MoneyFrame_Update( bn .. "_ItemPriceSmallMoneyFrame", items[k][4] ); -- group itemPrice(4)
+						--
+						_G[bn .. "_PctItemValueText"]:SetText( items[k][7] == 123456789 and RED_FONT_COLOR_CODE .. L["N/A"] .. FONT_COLOR_CODE_CLOSE or math.floor( items[k][7] ) .. "%" ); -- group pctItemValue(7)
 						b:Show();
 						if IsHighlightLocked() then b:LockHighlight(); end
 					else
@@ -2491,6 +2549,36 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 				NS.UpdateTitleText();
 			end
 		},
+		OnLoad = function( self )
+			function self:Adjust()
+				NS.adjustScrollFrame = false;
+				if TSMAPI and NS.db["tsmItemValueSource"] ~= "" then
+					NS.isPctItemValue = true;
+					AuctionFrameCollectionShop_NameSortButton:SetSize( 272, 19 );
+					AuctionFrameCollectionShop_CategorySortButton:SetSize( 152, 19 );
+					AuctionFrameCollectionShop_ItemPriceSortButton:SetSize( 170, 19 );
+					AuctionFrameCollectionShop_PctItemValueSortButton:Show();
+					for i = 1, self.numToDisplay do
+						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_Name"]:SetSize( 235, 30 );
+						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_Category"]:SetSize( 150, 30 );
+						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_ItemPrice"]:SetSize( 168, 30 );
+						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_PctItemValue"]:Show();
+					end
+				else
+					NS.isPctItemValue = false;
+					AuctionFrameCollectionShop_NameSortButton:SetSize( 297, 19 );
+					AuctionFrameCollectionShop_CategorySortButton:SetSize( 202, 19 );
+					AuctionFrameCollectionShop_ItemPriceSortButton:SetSize( 188, 19 );
+					AuctionFrameCollectionShop_PctItemValueSortButton:Hide();
+					for i = 1, self.numToDisplay do
+						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_Name"]:SetSize( 260, 30 );
+						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_Category"]:SetSize( 200, 30 );
+						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_ItemPrice"]:SetSize( 186, 30 );
+						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_PctItemValue"]:Hide();
+					end
+				end
+			end
+		end,
 	} );
 	NS.TextFrame( "_JumbotronFrame", AuctionFrameCollectionShop, "", {
 		hidden = true,
@@ -2834,7 +2922,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 					end
 					if k <= numItems then
 						b:SetScript( "OnClick", function() c:Click() end );
-						_G[bn .. "_Name"]:SetText( items[k][2] );
+						_G[bn .. "_NameText"]:SetText( items[k][2] );
 						--
 						c:SetChecked( NS.db["modeFilters"][NS.mode][items[k][1]] );
 						c:SetScript( "OnEnter", function() b:LockHighlight(); end );

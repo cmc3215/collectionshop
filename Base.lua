@@ -288,6 +288,9 @@ NS.ScrollFrame = function( name, parent, set )
 		self:SetVerticalScroll( 0 );
 		self:Update();
 	end
+	if set.OnLoad then
+		set.OnLoad( f );
+	end
 	return f;
 end
 --
@@ -575,6 +578,16 @@ end
 NS.FindKeyByField = function( t, f, fv )
 	if not fv then return nil end
 	for k = 1, #t do
+		if t[k][f] == fv then
+			return k;
+		end
+	end
+	return nil;
+end
+--
+NS.PairsFindKeyByField = function( t, f, fv )
+	if not fv then return nil end
+	for k, v in pairs( t ) do
 		if t[k][f] == fv then
 			return k;
 		end
