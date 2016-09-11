@@ -2187,7 +2187,6 @@ NS.UpdateMountCollection = function()
 			NS.mountCollection[itemId] = isCollected and 1 or 0;
 			addonmountsUpdated = addonmountsUpdated + 1;
 			if addonmountsUpdated == addonMountsTotal then
-				NS.Print( "Broke after " .. i .. " mounts of " .. #mountIDs );
 				break;
 			end
 		end
