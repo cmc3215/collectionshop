@@ -1,0 +1,28 @@
+**1.05**
+* Release date: 09/11/2016
+* You must first exit "World of Warcraft" completely.
+* Improved detection of Not Collected vs Collected on Mounts and Toys
+* Bug fix, in rare situations changing options would close the options frame unintentionally.
+* New optional results column for users of the popular TradeSkillMaster addon, "% Item Value". This will allow viewing and sorting by this value to determine how good of a price you're getting on your collection buyouts.
+* New option for previously mentioned column, "Item Value Source". This option is the price source or custom price source used to calculate the Item Value.
+
+**1.04**
+* Release date: 09/11/2016
+* Not released.
+
+**1.03**
+* Release date: 09/09/2016
+* Workaround added for Blizzard Auction House bug: Blizzard_AuctionUI.lua:733: attempt to index local 'color' (a nil value)
+
+**1.02**
+* Release date: 09/08/2016
+* Bug fix, rare LUA error on slow connections caused by previous increase in filter retry attempts.
+* Bug fix, sometimes on slow connections, auctions were said to be no longer available when really there was just not enough time given to find the information required. Increased retry attempts to compensate, this should no longer happen.
+
+**1.01**
+* Release date: 09/07/2016
+* Bug fix, occasionally items Already known would be listed as Not Collected due to slow response in retrieving item information. I've increased retry attempts to retrieve item information for filters to avoid inaccurate results. Should an item still fail during filtering a chat message will be shown.
+
+**1.0**
+* Release date: 09/05/2016
+* Intial release.
