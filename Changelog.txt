@@ -1,10 +1,14 @@
-**1.04**
+**1.05**
 * Release date: 09/11/2016
 * You must first exit "World of Warcraft" completely.
 * Improved detection of Not Collected vs Collected on Mounts and Toys
 * Bug fix, in rare situations changing options would close the options frame unintentionally.
 * New optional results column for users of the popular TradeSkillMaster addon, "% Item Value". This will allow viewing and sorting by this value to determine how good of a price you're getting on your collection buyouts.
 * New option for previously mentioned column, "Item Value Source". This option is the price source or custom price source used to calculate the Item Value.
+
+**1.04**
+* Release date: 09/11/2016
+* Not released.
 
 **1.03**
 * Release date: 09/09/2016

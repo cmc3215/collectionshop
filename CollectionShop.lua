@@ -405,8 +405,8 @@ end
 NS.Upgrade = function()
 	local vars = NS.DefaultSavedVariables();
 	local version = NS.db["version"];
-	-- 1.04
-	if version < 1.04 then
+	-- 1.05
+	if version < 1.05 then
 		NS.db["tsmItemValueSource"] = vars["tsmItemValueSource"]; -- New db variable
 	end
 	--
