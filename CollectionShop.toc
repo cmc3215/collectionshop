@@ -1,6 +1,6 @@
 ﻿## Interface: 70000
 ## Title: CollectionShop
-## Version: 1.05
+## Version: 1.06
 ## Author: Clinton Caldwell
 ## Notes: Find and buy the lowest buyout Mounts, Pets, Toys, and Appearances.
 ## SavedVariables: COLLECTIONSHOP_SAVEDVARIABLES

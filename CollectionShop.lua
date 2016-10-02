@@ -2242,7 +2242,12 @@ NS.UpdateTransmogCollection = function()
 		if appearanceNum <= #appearances then
 			local appearance = appearances[appearanceNum];
 			local appearanceID = appearance.visualID;
-			NS.transmogCollection.appearances[appearanceID] = { categoryID, appearance.isCollected }; -- All Appearances
+			-- Appearances in more than one category can return isCollected TRUE for one and isCollected FALSE for another
+			-- For this reason we change isCollected to TRUE when required and ignore FALSE if already recorded
+			if not NS.transmogCollection.appearances[appearanceID] or ( appearance.isCollected and not NS.transmogCollection.appearances[appearanceID][2] ) then
+				NS.transmogCollection.appearances[appearanceID] = { nil, appearance.isCollected }; -- All Appearances -- nil was categoryID, but it currently not being used
+			end
+			--
 			local appearanceSources = C_TransmogCollection.GetAppearanceSources( appearanceID );
 			for sourceNum = 1, #appearanceSources do
 				local _,_,_,_,isCollected,itemLink,_,sourceType = C_TransmogCollection.GetAppearanceSourceInfo( appearanceSources[sourceNum].sourceID );
@@ -2328,7 +2333,7 @@ NS.SlashCmdHandler = function( cmd )
 		return; -- Stop function
 	end
 	--
-	if cmd == "buyoutbuttonclick" and AuctionFrameCollectionShop then
+	if cmd == "buyoutbuttonclick" and NS.IsTabShown() then
 		AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_BuyoutButton:Click();
 		return; -- Stop function
 	end
