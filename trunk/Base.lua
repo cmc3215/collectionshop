@@ -77,6 +77,9 @@ NS.TextFrame = function( name, parent, text, set )
 	if set.OnShow then
 		f:SetScript( "OnShow", set.OnShow );
 	end
+	if set.OnLoad then
+		set.OnLoad( f );
+	end
 	return f;
 end
 --
@@ -94,6 +97,10 @@ NS.InputBox = function( name, parent, set  )
 	end
 	if set.maxLetters then
 		f:SetMaxLetters( set.maxLetters );
+	end
+	-- Tooltip
+	if set.tooltip then
+		NS.Tooltip( f, set.tooltip, set.tooltipAnchor or { f, "ANCHOR_TOPRIGHT", 20, 0 } );
 	end
 	--
 	if set.OnTabPressed then
@@ -565,30 +572,24 @@ NS.MoneyToString = function( money, colorCode )
 	return moneyText;
 end
 --
-NS.FindKeyByName = function( t, name )
-	if not name then return nil end
-	for k, v in ipairs( t ) do
-		if v["name"] == name then
-			return k;
-		end
-	end
-	return nil;
-end
---
-NS.FindKeyByField = function( t, f, fv )
-	if not fv then return nil end
+NS.FindKeyByField = function( t, f, v )
+	if not v then return nil end
 	for k = 1, #t do
-		if t[k][f] == fv then
+		if t[k][f] == v then
 			return k;
 		end
 	end
 	return nil;
 end
 --
-NS.PairsFindKeyByField = function( t, f, fv )
-	if not fv then return nil end
-	for k, v in pairs( t ) do
-		if t[k][f] == fv then
+NS.FindKeyByName = function( t, name )
+	return NS.FindKeyByField( t, "name", name );
+end
+--
+NS.PairsFindKeyByField = function( t, f, v )
+	if not v then return nil end
+	for k,_ in pairs( t ) do
+		if t[k][f] == v then
 			return k;
 		end
 	end
@@ -615,4 +616,24 @@ NS.Sort = function( t, k, order )
 			end
 		end
 	);
+end
+--
+NS.GetItemInfo = function( itemIdNameLink, Callback, maxAttempts, after )
+	if not itemIdNameLink or itemIdNameLink == 0 then return Callback(); end
+	local attempts,CheckItemInfo;
+	CheckItemInfo = function()
+		local name,link,quality,level,minLevel,type,subType,stackCount,equipLoc,texture,sellPrice,classID,subClassID = GetItemInfo( itemIdNameLink );
+		if not name and attempts < maxAttempts then
+			attempts = attempts + 1;
+			return C_Timer.After( after, CheckItemInfo );
+		elseif not name then
+			return Callback();
+		else
+			return Callback( name,link,quality,level,minLevel,type,subType,stackCount,equipLoc,texture,sellPrice,classID,subClassID );
+		end
+	end
+	attempts = 1;
+	maxAttempts = maxAttempts or 50;
+	after = after or 0.10;
+	CheckItemInfo();
 end
