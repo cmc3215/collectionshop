@@ -1,3 +1,7 @@
+**1.07**
+* Release date: 10/25/2016
+* TOC updated for patch 7.1.
+
 **1.06**
 * Release date: 10/02/2016
 * Bug fix, a very few Appearances were showing as Not Collected even when they were due to being "Collected" in one Appearance category while being "Not Collected" in another. Thanks to Curse user Tarasitarik for reporting this issue.
