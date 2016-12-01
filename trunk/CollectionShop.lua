@@ -2312,14 +2312,14 @@ end
 NS.OnTransmogCollectionUpdated = function()
 	if not NS.transmogCollection.appearances or not NS.transmogCollection.sources then return end
 	local appearanceID,categoryID = C_TransmogCollection.GetLatestAppearance();
-	if appearanceID and NS.transmogCollection.appearances[appearanceID] then
+	if appearanceID then
 		-- Update Appearances
-		NS.transmogCollection.appearances[appearanceID][2] = true; -- isCollected(2)
+		NS.transmogCollection.appearances[appearanceID] = { nil, true }; -- categoryID(1) currently not being used, isCollected(2)
 		-- Update Sources
 		local appearanceSources = C_TransmogCollection.GetAppearanceSources( appearanceID );
 		for sourceNum = 1, #appearanceSources do
 			local _,_,_,_,isCollected = C_TransmogCollection.GetAppearanceSourceInfo( appearanceSources[sourceNum].sourceID );
-			NS.transmogCollection.sources[appearanceSources[sourceNum].sourceID][2] = isCollected; -- isCollected(2)
+			NS.transmogCollection.sources[appearanceSources[sourceNum].sourceID] = { appearanceID, isCollected }; -- appearanceID(1), isCollected(2)
 		end
 	end
 end
