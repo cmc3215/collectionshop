@@ -1,3 +1,8 @@
+**1.08**
+
+- Release date: 12/01/2016
+- Bug fix, LUA error when looting a new Appearance from a Timewalking Dungeon after using CollectionShop Appearances mode.
+
 **1.07**
 
 - Release date: 10/25/2016
