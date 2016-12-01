@@ -1,3 +1,10 @@
+**1.09**
+
+- Release date: 12/01/2016
+- Added the few missing collection items list below...
+- Companion Pets: Albino Buzzard, Noblegarden Bunny
+- Toys: Big Red Raygun
+
 **1.08**
 
 - Release date: 12/01/2016
