@@ -1,3 +1,9 @@
+**1.10**
+
+- Release date: 01/10/2017
+- Added new item introduced in patch 7.1.5.
+- Toys: Portable Yak Wash
+
 **1.09**
 
 - Release date: 12/01/2016
