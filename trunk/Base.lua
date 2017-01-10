@@ -596,6 +596,7 @@ end
 NS.MoneyToString = function( money, colorCode )
 	local negative = money < 0;
 	money = math.abs( money );
+	colorCode = colorCode or HIGHLIGHT_FONT_COLOR_CODE;
 	--
 	local gold = money >= COPPER_PER_GOLD and NS.FormatNum( math.floor( money / COPPER_PER_GOLD ) ) or nil;
 	local silver = math.floor( ( money % COPPER_PER_GOLD ) / COPPER_PER_SILVER );
@@ -603,15 +604,18 @@ NS.MoneyToString = function( money, colorCode )
 	--
 	gold = ( gold and colorCode ) and ( colorCode .. gold .. FONT_COLOR_CODE_CLOSE ) or gold;
 	silver = ( silver > 0 and colorCode ) and ( colorCode .. silver .. FONT_COLOR_CODE_CLOSE ) or ( silver > 0 and silver ) or nil;
-	copper = colorCode .. copper .. FONT_COLOR_CODE_CLOSE;
+	copper = ( copper > 0 and colorCode ) and ( colorCode .. copper .. FONT_COLOR_CODE_CLOSE ) or ( copper > 0 and copper ) or nil;
 	--
 	local g,s,c = "|cffffd70ag|r","|cffc7c7cfs|r","|cffeda55fc|r";
-	local moneyText = copper .. c;
+	local moneyText = "";
+	if copper then
+		moneyText = copper .. c;
+	end
 	if silver then
-		moneyText = silver .. s .. " " .. moneyText;
+		moneyText = copper and ( silver .. s .. " " .. moneyText ) or ( silver .. s );
 	end
 	if gold then
-		moneyText = gold .. g .. " " .. moneyText;
+		moneyText = ( copper or silver ) and ( gold .. g .. " " .. moneyText ) or ( gold .. g );
 	end
 	if negative then
 		moneyText = colorCode and ( colorCode "-|r" .. moneyText ) or ( "-" .. moneyText );
