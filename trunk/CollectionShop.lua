@@ -80,7 +80,7 @@ for i = 1, #NS.ridingSpells do
 end
 NS.cachedDressUpIds = {};
 NS.mountInfo = {
-	-- As of 12/01/2016
+	-- As of 01/10/2017
 	--[mountItemId] = { displayID, spellID } -- creatureName -- itemName
 	[71718] = { 17011, 101573 }, -- Swift Shorestrider -- Swift Shorestrider
 	[52200] = { 25279, 73313 }, -- Crimson Deathcharger -- Reins of the Crimson Deathcharger
@@ -122,7 +122,7 @@ NS.mountInfo = {
 	[49290] = { 34655, 65917 }, -- Magic Rooster -- Magic Rooster Egg
 };
 NS.petInfo = {
-	-- As of 12/01/2016
+	-- As of 01/10/2017
 	--[companionPetItemId] = { speciesID, creatureID }
 	[142448] = { 1984, 116080 }, -- Albino Buzzard
 	[141532] = { 1943, 33975 }, -- Noblegarden Bunny
@@ -296,8 +296,9 @@ NS.petInfo = {
 	[89367] = { 850, 66105 }, -- Yu'lon Kite
 };
 NS.toyInfo = {
-	-- As of 12/01/2016
+	-- As of 01/10/2017
 	--[toyItemId] = { catNum, subCatNum }
+	[144393] = { 12, 6 }, -- Portable Yak Wash
 	[142265] = { 12, 6 }, -- Big Red Raygun
 	[122681] = { 12, 6 }, -- Sternfathom's Pet Journal
 	[129956] = { 12, 6 }, -- Leather Love Seat
