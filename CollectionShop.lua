@@ -298,46 +298,46 @@ NS.petInfo = {
 NS.toyInfo = {
 	-- As of 01/10/2017
 	--[toyItemId] = { catNum, subCatNum }
-	[144393] = { 12, 6 }, -- Portable Yak Wash
-	[142265] = { 12, 6 }, -- Big Red Raygun
-	[122681] = { 12, 6 }, -- Sternfathom's Pet Journal
-	[129956] = { 12, 6 }, -- Leather Love Seat
-	[130157] = { 12, 6 }, -- Syxsehnz Rod
-	[130169] = { 12, 6 }, -- Tournament Favor
-	[130171] = { 12, 6 }, -- Cursed Orb
-	[130191] = { 12, 6 }, -- Trapped Treasure Chest Kit
-	[130214] = { 12, 6 }, -- Worn Doll
-	[130232] = { 12, 6 }, -- Moonfeather Statue
+	[144393] = { 12, 4 }, -- Portable Yak Wash
+	[142265] = { 12, 4 }, -- Big Red Raygun
+	[122681] = { 12, 4 }, -- Sternfathom's Pet Journal
+	[129956] = { 12, 4 }, -- Leather Love Seat
+	[130157] = { 12, 4 }, -- Syxsehnz Rod
+	[130169] = { 12, 4 }, -- Tournament Favor
+	[130171] = { 12, 4 }, -- Cursed Orb
+	[130191] = { 12, 4 }, -- Trapped Treasure Chest Kit
+	[130214] = { 12, 4 }, -- Worn Doll
+	[130232] = { 12, 4 }, -- Moonfeather Statue
 	[130251] = { 6, 8 }, -- JewelCraft
-	[130254] = { 12, 6 }, -- Chatterstone
+	[130254] = { 12, 4 }, -- Chatterstone
 	[132518] = { 6, 1 }, -- Blingtron's Circuit Design Tutorial
 	[109167] = { 6, 1 }, -- Findle's Loot-A-Rang
 	[112059] = { 6, 1 }, -- Wormhole Centrifuge
-	[128536] = { 12, 6 }, -- Leylight Brazier
-	[128807] = { 12, 6 }, -- Coin of Many Faces
+	[128536] = { 12, 4 }, -- Leylight Brazier
+	[128807] = { 12, 4 }, -- Coin of Many Faces
 	[87215] = { 6, 1 }, -- Wormhole Generator: Pandaria
 	[88531] = { 6, 5 }, -- Lao Chin's Last Mug
 	[108739] = { 12, 1 }, -- Pretty Draenor Pearl
 	[40727] = { 6, 1 }, -- Gnomish Gravity Well
 	[60854] = { 6, 1 }, -- Loot-A-Rang
-	[134007] = { 12, 6 }, -- Eternal Black Diamond Ring
+	[134007] = { 12, 4 }, -- Eternal Black Diamond Ring
 	[40768] = { 6, 1 }, -- MOLL-E
-	[45984] = { 12, 6 }, -- Unusual Compass
+	[45984] = { 12, 4 }, -- Unusual Compass
 	[48933] = { 6, 1 }, -- Wormhole Generator: Northrend
-	[52201] = { 12, 6 }, -- Muradin's Favor
-	[52253] = { 12, 6 }, -- Sylvanas' Music Box
+	[52201] = { 12, 4 }, -- Muradin's Favor
+	[52253] = { 12, 4 }, -- Sylvanas' Music Box
 	[30542] = { 6, 1 }, -- Dimensional Ripper - Area 52
 	[30544] = { 6, 1 }, -- Ultrasafe Transporter: Toshley's Station
 	[18984] = { 6, 1 }, -- Dimensional Ripper - Everlook
 	[18986] = { 6, 1 }, -- Ultrasafe Transporter: Gadgetzan
 	[23767] = { 6, 1 }, -- Crashin' Thrashin' Robot
-	[108631] = { 12, 4 }, -- Crashin' Thrashin' Roller Controller
-	[108633] = { 12, 4 }, -- Crashin' Thrashin' Cannon Controller
-	[108634] = { 12, 4 }, -- Crashin' Thrashin' Mortar Controller
-	[108635] = { 12, 4 }, -- Crashin' Thrashin' Killdozer Controller
+	[108631] = { 12, 3 }, -- Crashin' Thrashin' Roller Controller
+	[108633] = { 12, 3 }, -- Crashin' Thrashin' Cannon Controller
+	[108634] = { 12, 3 }, -- Crashin' Thrashin' Mortar Controller
+	[108635] = { 12, 3 }, -- Crashin' Thrashin' Killdozer Controller
 	[17716] = { 6, 1 }, -- Snowmaster 9000
-	[140363] = { 12, 6 }, -- Pocket Fel Spreader
-	[1973] = { 12, 6 }, -- Orb of Deception
+	[140363] = { 12, 4 }, -- Pocket Fel Spreader
+	[1973] = { 12, 4 }, -- Orb of Deception
 	[18660] = { 6, 1 }, -- World Enlarger
 	[36862] = { 6, 8 }, -- Worn Troll Dice
 	[36863] = { 6, 8 }, -- Decahedral Dwarven Dice
@@ -347,21 +347,21 @@ NS.toyInfo = {
 	[105898] = { 6, 8 }, -- Moonfang's Paw
 	[108745] = { 6, 1 }, -- Personal Hologram
 	[109183] = { 6, 1 }, -- World Shrinker
-	[116689] = { 12, 4 }, -- Pineapple Lounge Cushion
-	[116690] = { 12, 4 }, -- Safari Lounge Cushion
-	[116691] = { 12, 4 }, -- Zhevra Lounge Cushion
-	[116692] = { 12, 4 }, -- Fuzzy Green Lounge Cushion
-	[118427] = { 12, 6 }, -- Autographed Hearthstone Card
+	[116689] = { 12, 3 }, -- Pineapple Lounge Cushion
+	[116690] = { 12, 3 }, -- Safari Lounge Cushion
+	[116691] = { 12, 3 }, -- Zhevra Lounge Cushion
+	[116692] = { 12, 3 }, -- Fuzzy Green Lounge Cushion
+	[118427] = { 12, 4 }, -- Autographed Hearthstone Card
 	[119210] = { 6, 8 }, -- Hearthstone Board
 	[119212] = { 6, 8 }, -- Winning Hand
-	[127695] = { 12, 6 }, -- Spirit Wand
-	[127707] = { 12, 6 }, -- Indestructible Bone
+	[127695] = { 12, 4 }, -- Spirit Wand
+	[127707] = { 12, 4 }, -- Indestructible Bone
 	[128310] = { 12, 1 }, -- Burning Blade
-	[128794] = { 12, 6 }, -- Sack of Spectral Spiders
+	[128794] = { 12, 4 }, -- Sack of Spectral Spiders
 	[129211] = { 6, 8 }, -- Steamy Romance Novel Kit
-	[129958] = { 12, 3 }, -- Leather Pet Leash
-	[129960] = { 12, 3 }, -- Leather Pet Bed
-	[129961] = { 12, 3 }, -- Flaming Hoop
+	[129958] = { 10, 11 }, -- Leather Pet Leash
+	[129960] = { 10, 11 }, -- Leather Pet Bed
+	[129961] = { 10, 11 }, -- Flaming Hoop
 };
 NS.mountItemIds = {};
 NS.petItemIds = { 82800 };
@@ -669,10 +669,8 @@ NS.SetMode = function( mode, noReset )
 				local categories,categoryName = {};
 				for i = 1, #AuctionCategories[10].subCategories do
 					categoryName = AuctionCategories[10].subCategories[i].name;
-					categories[#categories + 1] = { categoryName, categoryName, true }; -- Battle Pet Family
+					categories[#categories + 1] = { categoryName, ( i == 11 and ( L["Include"] .. " " ) or "" ) .. categoryName, true }; -- Pet Family (or Include Companion Pets)
 				end
-				categoryName = AuctionCategories[12].subCategories[3].name;
-				categories[#categories + 1] = { categoryName, L["Include"] .. " " .. categoryName, true }; -- Companion Pets
 				return categories;
 			end )(),
 			{
@@ -700,9 +698,9 @@ NS.SetMode = function( mode, noReset )
 					{ 6, 5 }, -- Consumables > Food & Drink
 					{ 6, 8 }, -- Consumables > Other
 					{ 12, 1 }, -- Miscellaneous > Junk
-					{ 12, 3 }, -- Miscellaneous > Companion Pets
-					{ 12, 4 }, -- Miscellaneous > Holiday
-					{ 12, 6 }, -- Miscellaneous > Other
+					{ 10, 11 }, -- Battle Pets > Companion Pets
+					{ 12, 3 }, -- Miscellaneous > Holiday
+					{ 12, 4 }, -- Miscellaneous > Other
 				};
 				local categories,categoryName = {};
 				for i = 1, #cnums do
@@ -1395,18 +1393,11 @@ function NS.scan:Start( type )
 				for i = 1, #AuctionCategories[10].subCategories do
 					if NS.db["modeFilters"][NS.mode][AuctionCategories[10].subCategories[i].name] then
 						table.insert( self.query.queue, function()
-							self.query.filterData = AuctionCategories[10].subCategories[i].filters; -- Battle Pets => Pet Family
+							self.query.filterData = AuctionCategories[10].subCategories[i].filters; -- Battle Pets => Pet Family (or Companion Pets)
 							self.query.categoryName = AuctionCategories[10].name; -- Battle Pets
-							self.query.subCategoryName = AuctionCategories[10].subCategories[i].name; -- Pet Family
+							self.query.subCategoryName = AuctionCategories[10].subCategories[i].name; -- Pet Family (or Companion Pets)
 						end );
 					end
-				end
-				if NS.db["modeFilters"][NS.mode][AuctionCategories[12].subCategories[3].name] then
-					table.insert( self.query.queue, function()
-						self.query.filterData = AuctionCategories[12].subCategories[3].filters; -- Miscellaneous => Companion Pets
-						self.query.categoryName = AuctionCategories[12].name; -- Miscellaneous
-						self.query.subCategoryName = AuctionCategories[12].subCategories[3].name; -- Companion Pets
-					end );
 				end
 				-- Pet Levels Filter Check
 				local petLevelsFilterCheck = false;
