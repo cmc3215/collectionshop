@@ -80,7 +80,7 @@ for i = 1, #NS.ridingSpells do
 end
 NS.cachedDressUpIds = {};
 NS.mountInfo = {
-	-- As of 01/10/2017
+	-- As of 04/07/2017
 	--[mountItemId] = { displayID, spellID } -- creatureName -- itemName
 	[71718] = { 17011, 101573 }, -- Swift Shorestrider -- Swift Shorestrider
 	[52200] = { 25279, 73313 }, -- Crimson Deathcharger -- Reins of the Crimson Deathcharger
@@ -122,7 +122,7 @@ NS.mountInfo = {
 	[49290] = { 34655, 65917 }, -- Magic Rooster -- Magic Rooster Egg
 };
 NS.petInfo = {
-	-- As of 01/10/2017
+	-- As of 04/07/2017
 	--[companionPetItemId] = { speciesID, creatureID }
 	[142448] = { 1984, 116080 }, -- Albino Buzzard
 	[141532] = { 1943, 33975 }, -- Noblegarden Bunny
@@ -294,9 +294,13 @@ NS.petInfo = {
 	[140761] = { 1933, 112945 }, -- Nightmare Treant
 	[94191] = { 1184, 69849 }, -- Stunted Direhorn
 	[89367] = { 850, 66105 }, -- Yu'lon Kite
+	[143756] = { 1998, 117180 }, -- Everliving Spore
+	[143754] = { 1999, 117182 }, -- Cavern Moccasin
+	[143755] = { 2000, 117184 }, -- Young Venomfang
+	[146953] = { 2042, 120397 }, -- Scraps
 };
 NS.toyInfo = {
-	-- As of 01/10/2017
+	-- As of 04/07/2017
 	--[toyItemId] = { catNum, subCatNum }
 	[144393] = { 12, 4 }, -- Portable Yak Wash
 	[142265] = { 12, 4 }, -- Big Red Raygun
@@ -414,15 +418,14 @@ NS.Upgrade = function()
 		NS.db["tsmItemValueSource"] = vars["tsmItemValueSource"]; -- New db variable
 	end
 	--
-	table.insert( NS.playerLoginMsg, string.format( L["Upgraded version %s to %s"], version, NS.version ) );
 	NS.db["version"] = NS.version;
 end
 --
 NS.UpgradePerCharacter = function()
 	local varspercharacter = NS.DefaultSavedVariablesPerCharacter();
 	local version = NS.dbpc["version"];
-	-- 1.04
-	--if version < 1.04 then
+	-- X.xx
+	--if version < X.xx then
 		-- Do upgrade
 	--end
 	--
