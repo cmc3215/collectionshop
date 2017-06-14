@@ -1,7 +1,14 @@
+**1.15**
+
+- Release date: 06/13/2017
+- Added new "Companion Pets" introduced in patch 7.2.5.
+- Companion Pets: Sneaky Marmot, Dig Rat
+
 **1.14**
 
 - Release date: 04/07/2017
 - Added new "Companion Pets" introduced in patch 7.2.
+- Companion Pets: Everliving Spore, Cavern Moccasin, Young Venomfang, Scraps
 
 **1.13**
 
