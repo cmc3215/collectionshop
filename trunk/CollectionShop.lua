@@ -3,6 +3,8 @@
 --------------------------------------------------------------------------------------------------------------------------------------------
 local NS = select( 2, ... );
 local L = NS.localization;
+NS.versionString = "2.0";
+NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
 --
@@ -24,13 +26,20 @@ NS.modeColorCode = nil;
 NS.mountCollection = {};
 NS.petCollection = {};
 NS.toyCollection = {};
-NS.transmogCollection = {};
-NS.updatingTransmogCollection = false;
+NS.appearanceCollection = {
+	categoryNames = {},
+	appearances = {},
+	sources = {},
+	getAllReady = false,
+};
 NS.shopAppearancesBy = nil; -- appearance, source
 --
 NS.auction = {
 	data = {
-		live = {},
+		live = {
+			itemIds = {},
+			appearanceSources = {},
+		},
 		groups = {},
 		sortKey = nil,
 		sortOrder = nil,
@@ -372,6 +381,7 @@ NS.toyInfo = {
 NS.mountItemIds = {};
 NS.petItemIds = { 82800 };
 NS.toyItemIds = {};
+NS.appearanceItemIds = {};
 for k, v in pairs( NS.mountInfo ) do
 	NS.mountItemIds[#NS.mountItemIds + 1] = k;
 end
@@ -388,7 +398,6 @@ end
 NS.SELECT_AN_AUCTION = function()
 	return string.format( L["Select an auction to buy or click \"Buy All\""] .. ( NS.mode == "APPEARANCES" and "\n" .. L["%sEach result is the lowest buyout auction for an|r %s"] or "" ), HIGHLIGHT_FONT_COLOR_CODE, NS.modeColorCode .. ( NS.shopAppearancesBy == "appearance" and L["Appearance"] or L["Appearance Source"] ) .. FONT_COLOR_CODE_CLOSE );
 end
-
 --------------------------------------------------------------------------------------------------------------------------------------------
 -- Default SavedVariables/PerCharacter & Upgrade
 --------------------------------------------------------------------------------------------------------------------------------------------
@@ -419,6 +428,10 @@ NS.Upgrade = function()
 	if version < 1.05 then
 		NS.db["tsmItemValueSource"] = vars["tsmItemValueSource"]; -- New db variable
 	end
+	-- 2.0
+	if version < 2.0 then
+		wipe( NS.db["getAllScan"] ); -- New data structure and information requirements
+	end
 	--
 	NS.db["version"] = NS.version;
 end
@@ -432,62 +445,6 @@ NS.UpgradePerCharacter = function()
 	--end
 	--
 	NS.dbpc["version"] = NS.version;
-end
---------------------------------------------------------------------------------------------------------------------------------------------
--- Events
---------------------------------------------------------------------------------------------------------------------------------------------
-NS.OnAddonLoaded = function() -- ADDON_LOADED
-	if IsAddOnLoaded( NS.addon ) then
-		if not NS.initialized then
-			-- Set Default SavedVariables
-			if not COLLECTIONSHOP_SAVEDVARIABLES then
-				COLLECTIONSHOP_SAVEDVARIABLES = NS.DefaultSavedVariables();
-			end
-			-- Set Default SavedVariablesPerCharacter
-			if not COLLECTIONSHOP_SAVEDVARIABLESPERCHARACTER then
-				COLLECTIONSHOP_SAVEDVARIABLESPERCHARACTER = NS.DefaultSavedVariablesPerCharacter();
-			end
-			-- Localize SavedVariables
-			NS.db = COLLECTIONSHOP_SAVEDVARIABLES;
-			NS.dbpc = COLLECTIONSHOP_SAVEDVARIABLESPERCHARACTER;
-			-- Upgrade if old version
-			if NS.db["version"] < NS.version then
-				NS.Upgrade();
-			end
-			-- Upgrade Per Character if old version
-			if NS.dbpc["version"] < NS.version then
-				NS.UpgradePerCharacter();
-			end
-			--
-			NS.initialized = true;
-		elseif IsAddOnLoaded( "Blizzard_AuctionUI" ) then
-			CollectionShopEventsFrame:UnregisterEvent( "ADDON_LOADED" );
-			NS.Blizzard_AuctionUI_OnLoad();
-		end
-	end
-end
---
-NS.OnPlayerLogin = function() -- PLAYER_LOGIN
-	CollectionShopEventsFrame:UnregisterEvent( "PLAYER_LOGIN" );
-	InterfaceOptions_AddCategory( CollectionShopInterfaceOptionsPanel );
-	if #NS.playerLoginMsg > 0 then
-		for _,msg in ipairs( NS.playerLoginMsg ) do
-			NS.Print( msg );
-		end
-	end
-end
---
-NS.OnInspectReady = function()
-	CollectionShopEventsFrame:UnregisterEvent( "INSPECT_READY" );
-	NS.linkSpecID = GetInspectSpecialization( "player" );
-end
---
-NS.OnPlayerSpecializationChanged = function( ... ) -- PLAYER_SPECIALIZATION_CHANGED
-	local arg1 = select( 1, ... );
-	if not arg1 then return end
-	if arg1 == "player" then
-		AuctionFrameTab1:Click();
-	end
 end
 --------------------------------------------------------------------------------------------------------------------------------------------
 -- AuctionFrameTab / SideDressUpModel
@@ -532,14 +489,11 @@ end
 NS.Reset = function( filterOnClick )
 	CollectionShopEventsFrame:UnregisterEvent( "CHAT_MSG_SYSTEM" );
 	NS.scan:Reset(); -- Also Unregisters AUCTION_ITEM_LIST_UPDATE
-	wipe( NS.auction.data.live );
+	wipe( NS.auction.data.live.itemIds );
+	wipe( NS.auction.data.live.appearanceSources );
 	wipe( NS.auction.data.groups );
 	NS.disableFlyoutChecks = false;
 	NS.buyAll = false;
-	if NS.updatingTransmogCollection then -- Clean unfinished Appearances update
-		NS.updatingTransmogCollection = false;
-		wipe( NS.transmogCollection );
-	end
 	if AuctionFrame and not NS.IsTabShown() then -- Stop monitoring spec and UI errors, unset mode, and reset buyout tracking when tab is changed or Auction House closed
 		CollectionShopEventsFrame:UnregisterEvent( "PLAYER_SPECIALIZATION_CHANGED" );
 		CollectionShopEventsFrame:UnregisterEvent( "INSPECT_READY" );
@@ -761,6 +715,7 @@ NS.SetMode = function( mode, noReset )
 				local categories,categoryName = {};
 				for i = 1, NUM_LE_TRANSMOG_COLLECTION_TYPES do
 					categoryName = C_TransmogCollection.GetCategoryInfo( i );
+					NS.appearanceCollection.categoryNames[i] = categoryName or false;
 					if categoryName and categoryName ~= TABARDSLOT and auctionCategoryIndexes[categoryName] then
 						categories[#categories + 1] = { categoryName, categoryName, true, auctionCategoryIndexes[categoryName] };
 					end
@@ -804,11 +759,8 @@ NS.SetMode = function( mode, noReset )
 		else
 			NS.Reset();
 		end
-	elseif NS.mode == "APPEARANCES" then
-		NS.Reset(); -- Reset before so that the mode screen is visible while updating or if updating is not necessary
-		if not next( NS.transmogCollection ) then
-			NS.UpdateTransmogCollection();
-		end
+	elseif NS.mode == "APPEARANCES" then -- appearanceCollection is updated just before ImportShopData
+		NS.Reset();
 	elseif ( not NS.mode and not noReset ) or NS.mode == "PETS" then -- petCollection updated during ImportShopData
 		NS.Reset();
 	end
@@ -830,15 +782,15 @@ end
 NS.UpdateTimeSinceLastScan = function()
 	local timeSinceLastGetAllScan = NS.db["getAllScan"][NS.realmName] and ( time() - NS.db["getAllScan"][NS.realmName]["time"] ) or nil;
 	local timeSinceLastGetAllScanText = ( function()
-		if type( timeSinceLastGetAllScan ) ~= "number" or timeSinceLastGetAllScan > 900 then
+		if NS.db["live"] then
+			return GREEN_FONT_COLOR_CODE .. L["Live"] .. FONT_COLOR_CODE_CLOSE;
+		elseif type( timeSinceLastGetAllScan ) ~= "number" or timeSinceLastGetAllScan > 900 then -- 900 sec = 15 min
 			return RED_FONT_COLOR_CODE .. ( timeSinceLastGetAllScan and NS.SecondsToStrTime( timeSinceLastGetAllScan ) or L["Never"] ) .. FONT_COLOR_CODE_CLOSE;
 		else
 			return HIGHLIGHT_FONT_COLOR_CODE .. NS.SecondsToStrTime( timeSinceLastGetAllScan ) .. FONT_COLOR_CODE_CLOSE;
 		end
 	end )();
-	AuctionFrameCollectionShop_TimeSinceLastGetAllScanFrameText:SetText(
-		string.format( L["Time since last scan: %s"], timeSinceLastGetAllScanText )
-	);
+	AuctionFrameCollectionShop_TimeSinceLastGetAllScanFrameText:SetText( string.format( L["Time since last scan: %s"], timeSinceLastGetAllScanText ) );
 end
 --
 NS.UpdateTitleText = function()
@@ -923,7 +875,7 @@ NS.AuctionGroup_AuctionMissing = function( groupKey, OnMessageOnly )
 	--
 	RemoveAuctions = function()
 		if not NS.db["live"] then
-			local scanAuctions = NS.db["getAllScan"][NS.realmName]["data"][itemId];
+			local scanAuctions = NS.db["getAllScan"][NS.realmName]["data"]["itemIds"][itemId];
 			-- Remove auctions(5) that match by itemPrice(1) and itemLink(2) from scan data
 			auction = 1;
 			while auction <= #scanAuctions do
@@ -934,6 +886,9 @@ NS.AuctionGroup_AuctionMissing = function( groupKey, OnMessageOnly )
 				else
 					auction = auction + 1;
 				end
+			end
+			if #scanAuctions == 0 then
+				scanAuctions = nil; -- Remove empty itemId from scan data
 			end
 		end
 		-- Remove auctions(5) that match by itemPrice(1) and itemLink(2) or itemId(6) from group
@@ -1039,7 +994,6 @@ NS.FlyoutPanelSetChecks = function( checked )
 	end
 	NS.Reset( true );
 end
-
 --------------------------------------------------------------------------------------------------------------------------------------------
 -- Item Link & Tooltip
 --------------------------------------------------------------------------------------------------------------------------------------------
@@ -1459,7 +1413,11 @@ function NS.scan:Start( type )
 				self.query.queue[1]();
 				self:QueryPageSend();
 			else
-				self:ImportShopData();
+				if not NS.appearanceCollection.getAllReady then
+					self:UpdateAppearanceCollection();
+				else
+					self:ImportShopData();
+				end
 			end
 		end
 	end
@@ -1509,11 +1467,18 @@ function NS.scan:QueryGetAllSend()
 		CollectionShopEventsFrame:RegisterEvent( "AUCTION_ITEM_LIST_UPDATE" );
 		--
 		if NS.db["getAllScan"][NS.realmName] then
-			wipe( NS.db["getAllScan"][NS.realmName]["data"] );
-			NS.db["getAllScan"][NS.realmName]["time"] = time();
-		else
-			NS.db["getAllScan"][NS.realmName] = { ["data"] = {}, ["time"] = time() };
+			NS.db["getAllScan"][NS.realmName] = nil;
 		end
+		--
+		NS.appearanceCollection.getAllReady = false;
+		--
+		NS.db["getAllScan"][NS.realmName] = {
+			["data"] = {
+				["itemIds"] = {},
+				["appearanceSources"] = {}
+			},
+			["time"] = time(),
+		};
 		--
 		QueryAuctionItems( name, minLevel, maxLevel, page, usable, rarity, getAll, exactMatch, filterData );
 	else
@@ -1535,6 +1500,23 @@ function NS.scan:OnAuctionItemListUpdate() -- AUCTION_ITEM_LIST_UPDATE
 	end
 end
 --
+function NS.scan:AuctionItemType( itemId )
+	if NS.mountInfo[itemId] then
+		return "mount";
+	elseif itemId == 82800 or NS.petInfo[itemId] then
+		return "pet";
+	elseif NS.toyInfo[itemId] then
+		return "toy";
+	else
+		local _,_,_,invType = GetItemInfoInstant( itemId );
+		if invType and NS.invTypeToSlotId[invType] then
+			return "possible-appearance";
+		else
+			return nil; -- No type
+		end
+	end
+end
+--
 function NS.scan:GetAuctionItemInfo( index )
 	local data = ( self.type == "GETALL" and NS.db["getAllScan"][NS.realmName]["data"] ) or ( self.type == "SHOP" and NS.auction.data.live );
 	local _,texture,count,quality,_,level,levelColHeader,_,_,buyoutPrice,_,_,_,_,_,_,itemId = GetAuctionItemInfo( "list", index );
@@ -1542,29 +1524,46 @@ function NS.scan:GetAuctionItemInfo( index )
 	if ( self.type == "SHOP" or self.type == "SELECT" ) and NS.db["maxItemPriceCopper"][NS.mode] > 0 and buyoutPrice > NS.db["maxItemPriceCopper"][NS.mode] then
 		return "maxprice";
 	elseif count == 1 and buyoutPrice > 0 and ( self.type ~= "SELECT" or buyoutPrice == self.query.auction[1] ) and ( quality == -1 or self.query.qualities[quality] ) then
+		local auctionItemType = self:AuctionItemType( itemId );
+		if not auctionItemType then return end -- Skip auctions that aren't the type we need
+		--
 		if self.query.qualities[quality] then
 			itemLink = GetAuctionItemLink( "list", index ); -- Ignore missing quality (-1) to force retry
 		end
+		--
 		if not itemLink then
 			return "retry";
 		else
 			if self.type == "SHOP" or self.type == "GETALL" then
-				local isMount = NS.mountInfo[itemId] and true or false;
-				local isPet = ( itemId == 82800 or NS.petInfo[itemId] ) and true or false;
-				local isToy = NS.toyInfo[itemId] and true or false;
-				if isMount or isPet or isToy or quality > 1 then -- Quality > 1 may be an Appearance
-					if not data[itemId] then
-						data[itemId] = {}; -- Store auctions by itemId
+				local appearanceID,sourceID;
+				--
+				if auctionItemType == "possible-appearance" then
+					if quality > 1 then -- Transmoggable gear is uncommon or higher quality
+						appearanceID,sourceID = NS.GetAppearanceSourceInfo( itemLink );
+						if not appearanceID then
+							return "retry";
+						end
+						if not NS.FindKeyByValue( data["appearanceSources"], sourceID ) then
+							data["appearanceSources"][#data["appearanceSources"] + 1] = sourceID; -- List of unique sources to update appearanceCollection
+						end
+					else
+						return nil; -- No poor and common quality items
 					end
-					-- Add auction
-					data[itemId][#data[itemId] + 1] = {
-						buyoutPrice, -- itemPrice
-						itemLink,
-						texture,
-						quality,
-						( levelColHeader == "REQ_LEVEL_ABBR" and level or 1 ), -- requiresLevel
-					};
 				end
+				--
+				if not data["itemIds"][itemId] then
+					data["itemIds"][itemId] = {}; -- Store auctions by itemId
+				end
+				-- Add auction
+				data["itemIds"][itemId][#data["itemIds"][itemId] + 1] = {
+					buyoutPrice, -- itemPrice
+					itemLink,
+					texture,
+					quality,
+					( levelColHeader == "REQ_LEVEL_ABBR" and level or 1 ), -- requiresLevel
+					appearanceID,
+					sourceID,
+				};
 			elseif self.type == "SELECT" and itemLink == self.query.auction[2] then -- itemLink(2)
 				return "found";
 			end
@@ -1644,8 +1643,12 @@ function NS.scan:QueryPageRetrieve()
 			self.query.remaining = self.query.remaining - 1;
 			self.query.page = 0; -- Reset to default
 			if self.query.remaining == 0 then
-				if self.type == "SHOP" then
-					self:ImportShopData(); -- SHOP scan "almost" complete
+				if self.type == "SHOP" then -- Live
+					if NS.mode == "APPEARANCES" then
+						self:UpdateAppearanceCollection(); -- SHOP scan "almost" complete
+					else
+						self:ImportShopData(); -- SHOP scan "almost" complete
+					end
 				else
 					self:Complete(); -- SELECT scan complete
 				end
@@ -1725,30 +1728,76 @@ function NS.scan:QueryGetAllRetrieve()
 	NextAuction();
 end
 --
+function NS.scan:UpdateAppearanceCollection()
+	local data1 = NS.db["live"] and NS.auction.data.live or NS.db["getAllScan"][NS.realmName]["data"];
+	--
+	NS.JumbotronFrame_Message( L["Updating Collection"] );
+	--
+	NS.BatchDataLoop( {
+		data = data1["appearanceSources"],
+		attemptsMax = 10,
+		AbortFunction = function()
+			if self.status ~= "scanning" then
+				return true;
+			end
+		end,
+		DataFunction = function( data, dataNum )
+			local sourceID = data[dataNum];
+			--
+			if not NS.appearanceCollection.sources[sourceID] then -- Skip existing sources
+				local isInfoReady, canCollect = C_TransmogCollection.PlayerCanCollectSource( sourceID );
+				--
+				if isInfoReady and canCollect then
+					local categoryID,appearanceID,_,_,sourceCollected,itemLink = C_TransmogCollection.GetAppearanceSourceInfo( sourceID );
+					if categoryID ~= 6 then -- Exclude TABARDSLOT
+						-- Appearance
+						if not NS.appearanceCollection.appearances[appearanceID] then
+							local appearanceCollected = sourceCollected;
+							if not sourceCollected then
+								local sources = C_TransmogCollection.GetAppearanceSources( appearanceID );
+								if sources then -- Empty if uncollected appearance has only unlisted sources
+									for i = 1, #sources do
+										if sources[i].isCollected then
+											appearanceCollected = true;
+											break; -- Stop ASAP
+										end
+									end
+								end
+							end
+							NS.appearanceCollection.appearances[appearanceID] = { nil, appearanceCollected }; -- nil was categoryID but is not currently being used
+						end
+						-- Source
+						NS.appearanceCollection.sources[sourceID] = { appearanceID, sourceCollected };
+						-- ItemID
+						local itemId = tonumber( string.match( itemLink, "item:(%d+):" ) );
+						local itemIdKey = NS.FindKeyByField( NS.appearanceItemIds, 1, itemId );
+						if not itemIdKey then
+							NS.appearanceItemIds[#NS.appearanceItemIds + 1] = { itemId, categoryID };
+						end
+					end
+				elseif not isInfoReady then
+					return "retry";
+				end
+			end
+		end,
+		EndBatchFunction = function( data, dataNum )
+			NS.StatusFrame_Message( string.format( L["%s items remaining..."], HIGHLIGHT_FONT_COLOR_CODE .. ( #data - dataNum ) .. FONT_COLOR_CODE_CLOSE ) );
+		end,
+		CompleteFunction = function()
+			if not NS.db["live"] then
+				NS.appearanceCollection.getAllReady = true;
+			end
+			NS.JumbotronFrame_Message( L["Shopping"] );
+			self:ImportShopData();
+		end,
+	} );
+end
+--
 function NS.scan:ImportShopData()
-	local data = NS.db["live"] and NS.auction.data.live or NS.db["getAllScan"][NS.realmName]["data"];
-	local itemIds = ( NS.mode == "MOUNTS" and NS.mountItemIds ) or ( NS.mode == "PETS" and NS.petItemIds ) or ( NS.mode == "TOYS" and NS.toyItemIds ) or ( NS.mode == "APPEARANCES" and NS.transmogCollection.itemIds );
+	local data = NS.db["live"] and NS.auction.data.live.itemIds or NS.db["getAllScan"][NS.realmName]["data"]["itemIds"];
+	local itemIds = ( NS.mode == "MOUNTS" and NS.mountItemIds ) or ( NS.mode == "PETS" and NS.petItemIds ) or ( NS.mode == "TOYS" and NS.toyItemIds ) or ( NS.mode == "APPEARANCES" and NS.appearanceItemIds );
 	--
 	local itemNum,itemId,category,speciesID,appearanceID,petLevel,sourceID,auctionNum,auctionBatchNum,auctionBatchSize,getAppearanceAttempts,getAppearanceAttemptsMax,NextItem,NextAuction,AdvanceBatch,AddToGroup,GetAppearance;
-	--
-	GetAppearance = function()
-		if self.status ~= "scanning" then return end
-		--
-		appearanceID, sourceID = NS.GetAppearanceSourceInfo( data[itemId][auctionNum][2] ); -- itemLink(2)
-		if appearanceID then
-			if NS.transmogCollection.appearances[appearanceID] and ( ( not NS.transmogCollection.appearances[appearanceID][2] and NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.transmogCollection.appearances[appearanceID][2] and not NS.transmogCollection.sources[sourceID][2] and NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) or ( NS.transmogCollection.appearances[appearanceID][2] and NS.transmogCollection.sources[sourceID][2] and NS.db["modeFilters"][NS.mode][NS.modeFilters[3][3][1]] ) ) then -- isCollected(2)
-				return AddToGroup();
-			else
-				return AdvanceBatch();
-			end
-		elseif getAppearanceAttempts <= getAppearanceAttemptsMax then
-			getAppearanceAttempts = getAppearanceAttempts + 1;
-			return C_Timer.After( 0.001, GetAppearance );
-		else
-			--NS.Print( string.format( L["%s appearanceID not found."], NS.db["getAllScan"][NS.realmName]["data"][itemId][auctionNum][2] ) ); -- DEBUG
-			return AdvanceBatch();
-		end
-	end
 	--
 	AddToGroup = function()
 		if self.status ~= "scanning" then return end
@@ -1851,8 +1900,12 @@ function NS.scan:ImportShopData()
 				end
 				if not discard and ( ( NS.mode == "PETS" or NS.db["modeFilters"][NS.mode][NS.modeFilters[5][1][1]] ) or data[itemId][auctionNum][5] <= NS.linkLevel ) then -- misc(5), Requires Level(1), key(1), requiresLevel(5)
 					if NS.mode == "APPEARANCES" then
-						getAppearanceAttempts = 1;
-						return GetAppearance();
+						appearanceID, sourceID = data[itemId][auctionNum][6], data[itemId][auctionNum][7]; -- appearanceID(6), sourceID(7)
+						if NS.appearanceCollection.appearances[appearanceID] and ( ( not NS.appearanceCollection.appearances[appearanceID][2] and NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.appearanceCollection.appearances[appearanceID][2] and not NS.appearanceCollection.sources[sourceID][2] and NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) or ( NS.appearanceCollection.appearances[appearanceID][2] and NS.appearanceCollection.sources[sourceID][2] and NS.db["modeFilters"][NS.mode][NS.modeFilters[3][3][1]] ) ) then -- isCollected(2)
+							return AddToGroup();
+						else
+							return AdvanceBatch();
+						end
 					else
 						return AddToGroup();
 					end
@@ -1871,7 +1924,7 @@ function NS.scan:ImportShopData()
 		--
 		if itemNum <= #itemIds then
 			itemId = NS.mode == "APPEARANCES" and itemIds[itemNum][1] or itemIds[itemNum];
-			category = ( NS.mode == "MOUNTS" and AuctionCategories[12].subCategories[5].name ) or ( NS.mode == "PETS" and "tbd" ) or ( NS.mode == "TOYS" and AuctionCategories[NS.toyInfo[itemId][1]].subCategories[NS.toyInfo[itemId][2]].name .. " (" .. AuctionCategories[NS.toyInfo[itemId][1]].name .. ")" ) or ( NS.mode == "APPEARANCES" and NS.transmogCollection.categoryNames[itemIds[itemNum][2]] );
+			category = ( NS.mode == "MOUNTS" and AuctionCategories[12].subCategories[5].name ) or ( NS.mode == "PETS" and "tbd" ) or ( NS.mode == "TOYS" and AuctionCategories[NS.toyInfo[itemId][1]].subCategories[NS.toyInfo[itemId][2]].name .. " (" .. AuctionCategories[NS.toyInfo[itemId][1]].name .. ")" ) or ( NS.mode == "APPEARANCES" and NS.appearanceCollection.categoryNames[itemIds[itemNum][2]] );
 			--
 			if ( NS.mode == "MOUNTS" or ( NS.mode == "PETS" and ( itemId == 82800 or NS.db["modeFilters"][NS.mode][NS.modeFilters[2][#NS.modeFilters[2]][1]] ) ) or ( NS.mode == "TOYS" and NS.db["modeFilters"][NS.mode][category] ) or ( NS.mode == "APPEARANCES" and NS.db["modeFilters"][NS.mode][category] ) ) and data[itemId] then -- categories(2), Companion Pets(#2), key(1)
 				-- Start auctions for item
@@ -1897,7 +1950,6 @@ function NS.scan:ImportShopData()
 	itemNum = 1;
 	auctionBatchNum = 1;
 	auctionBatchSize = 50;
-	getAppearanceAttemptsMax = 10;
 	NextItem();
 end
 --
@@ -1989,7 +2041,8 @@ function NS.scan:Complete( cancelMessage )
 		-- SHOP: Clicked the "Shop" button
 		self.status = "ready";
 		wipe( self.query.queue );
-		wipe( NS.auction.data.live );
+		wipe( NS.auction.data.live.itemIds );
+		wipe( NS.auction.data.live.appearanceSources );
 		--
 		collectgarbage( "collect" );
 		NS.AuctionDataGroups_Sort();
@@ -2022,7 +2075,7 @@ function NS.scan:Complete( cancelMessage )
 end
 --
 function NS.scan:OnChatMsgSystem( ... ) -- CHAT_MSG_SYSTEM
-	local arg1 = select( 1, ... );
+	local arg1 = ...;
 	if not arg1 then return end
 	if arg1 == ERR_AUCTION_BID_PLACED then
 		-- Bid Acccepted.
@@ -2096,7 +2149,7 @@ function NS.scan:AfterAuctionWon()
 	table.insert( NS.auctionsWon, CopyTable( self.query.auction ) ); -- auction
 	-- Remove ONE matching auction from GetAll scan data
 	if not NS.db["live"] then
-		local scanAuctions = NS.db["getAllScan"][NS.realmName]["data"][self.query.auction[6]];
+		local scanAuctions = NS.db["getAllScan"][NS.realmName]["data"]["itemIds"][self.query.auction[6]];
 		for auction = 1, #scanAuctions do
 			if #NS.auction.data.groups == 0 then return end -- Check for Reset
 			-- Match by itemPrice(1) and itemLink(2)
@@ -2104,6 +2157,9 @@ function NS.scan:AfterAuctionWon()
 				table.remove( scanAuctions, auction );
 				break; -- Just ONE
 			end
+		end
+		if #scanAuctions == 0 then
+			scanAuctions = nil; -- Remove empty itemId from scan data
 		end
 	end
 	-- Update collection counts and decide what to remove from Groups
@@ -2125,8 +2181,8 @@ function NS.scan:AfterAuctionWon()
 			removeGroup = true;
 		end
 	elseif NS.mode == "APPEARANCES" then
-		NS.transmogCollection.appearances[self.query.auction[8]][2] = true; -- appearanceID(8), isCollected(2)
-		NS.transmogCollection.sources[self.query.auction[9]][2] = true; -- sourceID(9), isCollected(2)
+		NS.appearanceCollection.appearances[self.query.auction[8]][2] = true; -- appearanceID(8), isCollected(2)
+		NS.appearanceCollection.sources[self.query.auction[9]][2] = true; -- sourceID(9), isCollected(2)
 		if NS.shopAppearancesBy == "appearance" or not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][3][1]] then -- collected(3), Collected - Known Sources(3), key(1)
 			removeGroup = true;
 		end
@@ -2207,7 +2263,6 @@ NS.GetAppearanceSourceInfo = function( itemLink )
 	if NS.linkSpecID == 72 and invType == "INVTYPE_2HWEAPON" and GetInventoryItemID( "player", slotId ) then
 		slotId = 17; -- Fury Warrior requires 2H Weapons in the "Off Hand" unless no weapon is equipped in the "Main Hand"
 	end
-    NS.Model:SetUnit( "player" );
     NS.Model:Undress();
     NS.Model:TryOn( itemLink, slotId );
     local sourceID = NS.Model:GetSlotTransmogSources( slotId );
@@ -2218,120 +2273,11 @@ NS.GetAppearanceSourceInfo = function( itemLink )
 		return nil;
 	end
 end
---
-NS.UpdateTransmogCollection = function()
-	NS.updatingTransmogCollection = true;
-	--
-	if NS.options.MainFrame:IsShown() then
-		NS.options.MainFrame:Hide(); -- Close options frame
-	end
-	NS.JumbotronFrame_Message( L["Updating"] );
-	AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_BuyoutButton:Disable();
-	AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_CancelButton:Disable();
-	AuctionFrameCollectionShop_LiveCheckButton:Disable();
-	AuctionFrameCollectionShop_ScanButton:Disable();
-	AuctionFrameCollectionShop_ShopButton:Disable();
-	NS.disableFlyoutChecks = true;
-	AuctionFrameCollectionShop_FlyoutPanel_ScrollFrame:Update();
-	--
-	local categoryID,appearances,appearanceNum,appearanceBatchNum,appearanceBatchSize,NextAppearance,NextCategory;
-	--
-	NextAppearance = function()
-		if not NS.updatingTransmogCollection then return end
-		--
-		if appearanceNum <= #appearances then
-			local appearance = appearances[appearanceNum];
-			local appearanceID = appearance.visualID;
-			-- Appearances in more than one category can return isCollected TRUE for one and isCollected FALSE for another
-			-- For this reason we change isCollected to TRUE when required and ignore FALSE if already recorded
-			if not NS.transmogCollection.appearances[appearanceID] or ( appearance.isCollected and not NS.transmogCollection.appearances[appearanceID][2] ) then
-				NS.transmogCollection.appearances[appearanceID] = { nil, appearance.isCollected }; -- All Appearances -- nil was categoryID, but it currently not being used
-			end
-			--
-			local appearanceSources = C_TransmogCollection.GetAppearanceSources( appearanceID );
-			for sourceNum = 1, #appearanceSources do
-				local _,_,_,_,isCollected,itemLink,_,sourceType = C_TransmogCollection.GetAppearanceSourceInfo( appearanceSources[sourceNum].sourceID );
-				NS.transmogCollection.sources[appearanceSources[sourceNum].sourceID] = { appearanceID, isCollected }; -- All Sources
-				if sourceType == 1 or sourceType == 4 or sourceType == 6 then -- Boss Drop, World Drop, Profession
-					local itemId = tonumber( string.match( itemLink, "item:(%d+):" ) );
-					local itemIdKey = NS.FindKeyByField( NS.transmogCollection.itemIds, 1, itemId ) or #NS.transmogCollection.itemIds + 1;
-					NS.transmogCollection.itemIds[itemIdKey] = { itemId, categoryID }; -- Only from certain sourceTypes
-				end
-			end
-			appearanceNum = appearanceNum + 1;
-			if appearanceBatchNum == appearanceBatchSize then
-				appearanceBatchNum = 1;
-				return C_Timer.After( 0.001, NextAppearance );
-			else
-				appearanceBatchNum = appearanceBatchNum + 1;
-				return NextAppearance();
-			end
-		else
-			categoryID = categoryID + 1;
-			return NextCategory();
-		end
-	end
-	--
-	NextCategory = function()
-		if not NS.updatingTransmogCollection then return end
-		--
-		if categoryID <= NUM_LE_TRANSMOG_COLLECTION_TYPES then
-			local categoryName = C_TransmogCollection.GetCategoryInfo( categoryID );
-			NS.transmogCollection.categoryNames[categoryID] = categoryName or false;
-			if categoryName and categoryName ~= TABARDSLOT then
-				-- Start appearances for category
-				appearances = C_TransmogCollection.GetCategoryAppearances( categoryID );
-				NS.StatusFrame_Message( HIGHLIGHT_FONT_COLOR_CODE .. #appearances .. FONT_COLOR_CODE_CLOSE .. " " .. categoryName .. "..." );
-				appearanceNum = 1;
-				return NextAppearance();
-			else
-				-- Skip unusable category
-				categoryID = categoryID + 1;
-				return NextCategory();
-			end
-		else
-			-- ALL CATEGORIES COMPLETE
-			NS.updatingTransmogCollection = false;
-			NS.Reset();
-			collectgarbage( "collect" );
-		end
-	end
-	--
-	NS.transmogCollection = {
-		categoryNames = {},
-		appearances = {},
-		sources = {},
-		itemIds = {},
-	};
-	categoryID = 1;
-	appearanceBatchNum = 1;
-	appearanceBatchSize = 25;
-	NextCategory();
-end
---
-NS.OnTransmogCollectionUpdated = function()
-	if not NS.transmogCollection.appearances or not NS.transmogCollection.sources then return end
-	local appearanceID,categoryID = C_TransmogCollection.GetLatestAppearance();
-	if appearanceID then
-		-- Update Appearances
-		NS.transmogCollection.appearances[appearanceID] = { nil, true }; -- categoryID(1) currently not being used, isCollected(2)
-		-- Update Sources
-		local appearanceSources = C_TransmogCollection.GetAppearanceSources( appearanceID );
-		for sourceNum = 1, #appearanceSources do
-			local _,_,_,_,isCollected = C_TransmogCollection.GetAppearanceSourceInfo( appearanceSources[sourceNum].sourceID );
-			NS.transmogCollection.sources[appearanceSources[sourceNum].sourceID] = { appearanceID, isCollected }; -- appearanceID(1), isCollected(2)
-		end
-	end
-end
 --------------------------------------------------------------------------------------------------------------------------------------------
 -- Slash Commands
 --------------------------------------------------------------------------------------------------------------------------------------------
 NS.SlashCmdHandler = function( cmd )
 	if not NS.initialized then return end
-	if NS.updatingTransmogCollection then
-		NS.Print( L["Updating Appearances, please try again afterwards."] );
-		return; -- Stop function
-	end
 	--
 	if cmd == "buyoutbuttonclick" and NS.IsTabShown() then
 		AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_BuyoutButton:Click();
@@ -2348,6 +2294,66 @@ NS.SlashCmdHandler = function( cmd )
 		NS.options.MainFrame:ShowTab( 3 );
 	elseif cmd == "help" then
 		NS.options.MainFrame:ShowTab( 4 );
+	elseif cmd == "data" then
+		if NS.db["getAllScan"][NS.realmName] then
+			local data = NS.db["getAllScan"][NS.realmName]["data"];
+			local uniqueItemIds = NS.Count( data["itemIds"] );
+			local auctions = 0;
+			local appearanceSources = #data["appearanceSources"];
+			for itemId,_ in pairs( data["itemIds"] ) do
+				auctions = NS.Count( data["itemIds"][itemId] ) + auctions;
+			end
+			NS.Print( GREEN_FONT_COLOR_CODE .. string.format( L["Realm: %s, UniqueItemIds: %d, Auctions: %d, Appearance Sources: %d"], NS.realmName, uniqueItemIds, auctions, appearanceSources ) .. FONT_COLOR_CODE_CLOSE );
+		else
+			NS.Print( RED_FONT_COLOR_CODE .. string.format( L["Realm: %s, No data"], NS.realmName ) .. FONT_COLOR_CODE_CLOSE );
+		end
+	elseif string.match( cmd, "^app" ) or string.match( cmd, "^appearance" ) then
+		if not NS.IsTabShown() then
+			NS.Print( string.format( L["%s auction house tab must be shown."], NS.title ) );
+			return; -- STOP
+		end
+		local _,itemIdStringLink = strsplit( " ", strtrim( cmd ), 2 );
+		if itemIdStringLink then
+			NS.GetItemInfo( itemIdStringLink, function( itemName,itemLink,_,_,_,_,_,_,invType,texture )
+				local itemID = itemLink and GetItemInfoInstant( itemLink ) or nil;
+				--
+				if not itemID then
+					NS.Print( string.format( L["%s, item not found"], itemIdStringLink ) );
+					return; -- STOP
+				end
+				--
+				if not invType then
+					NS.Print( string.format( L["%s, invType missing"], itemLink ) );
+					return; -- STOP
+				end
+				--
+				local slotId = NS.invTypeToSlotId[invType];
+				--
+				if not slotId then
+					NS.Print( string.format( L["%s, slotId missing"], itemLink ) );
+					return; -- STOP;
+				end
+				--
+				local appearanceID,sourceID = NS.GetAppearanceSourceInfo( itemLink );
+				--
+				if not appearanceID or not sourceID then
+					NS.Print( string.format( L["%s, appearanceID or sourceID missing"], itemLink ) );
+					return; -- STOP
+				end
+				-- Reverse Lookup
+				local _,rlAppearanceID,_,rlTexture = C_TransmogCollection.GetAppearanceSourceInfo( sourceID );
+				--
+				if appearanceID ~= rlAppearanceID or texture ~= rlTexture then
+					NS.Print( string.format( L["%s, model malfunction, data mismatch"], itemLink ) );
+					return; -- STOP
+				end
+				--
+				NS.Print( string.format( L["ItemID: %s, invType: %s, slotId: %s"], itemID, invType, slotId ) );
+				NS.Print( string.format( L["AppearanceID: %s, SourceID: %s, |T%s:32|t %s"], appearanceID, sourceID, texture, itemLink ) );
+			end );
+		else
+			NS.Print( "/cs appearance [itemID] or [itemString] or [itemLink]" );
+		end
 	else
 		NS.options.MainFrame:ShowTab( 4 );
 		NS.Print( L["Unknown command, opening Help"] );
@@ -2389,6 +2395,9 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 	} );
 	NS.Model = NS.Frame( "_DressUpModel", AuctionFrameCollectionShop, {
 		type = "DressUpModel",
+		OnLoad = function( self )
+			self:SetUnit( "player" );
+		end,
 	} );
 	NS.GameTooltip = NS.Frame( NS.addon .. "_GameTooltip", UIParent, {
 		topLevel = true,
@@ -2536,7 +2545,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 							category = ( NS.toyCollection[items[k][5][1][6]] == 0 and NS.modeColorCode .. category .. FONT_COLOR_CODE_CLOSE ) or RED_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE; -- auctions(5), first auction(1), itemId(6)
 						elseif NS.mode == "APPEARANCES" then
 							local appearanceID, sourceID = items[k][5][1][8], items[k][5][1][9]; -- auctions(5), first auction(1), appearanceID(8), sourceID(9)
-							category = ( not NS.transmogCollection.appearances[appearanceID][2] and NS.modeColorCode .. category .. FONT_COLOR_CODE_CLOSE ) or ( not NS.transmogCollection.sources[sourceID][2] and NORMAL_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE ) or RED_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE; -- isCollected(2)
+							category = ( not NS.appearanceCollection.appearances[appearanceID][2] and NS.modeColorCode .. category .. FONT_COLOR_CODE_CLOSE ) or ( not NS.appearanceCollection.sources[sourceID][2] and NORMAL_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE ) or RED_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE; -- isCollected(2)
 						end
 						_G[bn .. "_CategoryText"]:SetText( category ); -- group category(3)
 						--
@@ -2606,7 +2615,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		template = false,
 		size = { 96, 96 },
 		setPoint = { "TOPLEFT", "$parent", "TOPLEFT", 144.5, -108 },
-		normalTexture = "Interface\\Icons\\MountJournalPortrait",
+		normalTexture = 631718,
 		OnClick = function ()
 			NS.SetMode( 1 ); -- MOUNTS
 		end,
@@ -2621,7 +2630,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		template = false,
 		size = { 96, 96 },
 		setPoint = { "LEFT", "#sibling", "RIGHT", 20, 0 },
-		normalTexture = "Interface\\Icons\\PetJournalPortrait",
+		normalTexture = 631719,
 		OnClick = function ()
 			NS.SetMode( 2 ); -- PETS
 		end,
@@ -2636,7 +2645,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		template = false,
 		size = { 96, 96 },
 		setPoint = { "LEFT", "#sibling", "RIGHT", 20, 0 },
-		normalTexture = "Interface\\Icons\\Trade_Archaeology_ChestofTinyGlassAnimals",
+		normalTexture = 454046,
 		OnClick = function ()
 			NS.SetMode( 3 ); -- TOYS
 		end,
@@ -2651,7 +2660,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		template = false,
 		size = { 96, 96 },
 		setPoint = { "LEFT", "#sibling", "RIGHT", 20, 0 },
-		normalTexture = "Interface\\Icons\\inv_chest_cloth_17",
+		normalTexture = 132658,
 		OnClick = function ()
 			NS.SetMode( 4 ); -- APPEARANCES
 		end,
@@ -2699,7 +2708,6 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 			end
 		end,
 	} );
-
 	NS.TextFrame( "_StatusFrame", AuctionFrameCollectionShop_DialogFrame, "", {
 		setAllPoints = true,
 		justifyH = "CENTER",
@@ -2781,7 +2789,6 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 			end
 		end,
 	} );
-
 	NS.TextFrame( "_TimeSinceLastGetAllScanFrame", AuctionFrameCollectionShop, "", {
 		size = { 270, 22 },
 		setPoint = { "RIGHT", "#sibling", "LEFT", -47, 0 },
@@ -2802,7 +2809,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		template = false,
 		size = { 32, 32 },
 		setPoint = { "TOPRIGHT", "$parent_NameSortButton", "BOTTOMLEFT", -6, -9 },
-		normalTexture = "Interface\\ICONS\\INV_Misc_Gear_01",
+		normalTexture = 134063,
 		tooltip = L["Options"],
 		OnClick = function()
 			NS.SlashCmdHandler( "" );
@@ -2815,10 +2822,14 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		template = false,
 		size = { 32, 32 },
 		setPoint = { "TOP", "#sibling", "BOTTOM", 0, -6 },
-		normalTexture = "Interface\\ICONS\\MountJournalPortrait",
+		normalTexture = 631718,
 		tooltip = L["Choose Collection Mode"],
 		OnClick = function( self )
-			NS.SetMode( nil );
+			if NS.scan.status == "ready" or NS.scan.status == "selected" then
+				NS.SetMode( nil );
+			else
+				NS.Print( L["Selection ignored, busy scanning or buying an auction"] );
+			end
 		end,
 		OnLoad = function( self )
 			self.tooltipAnchor = { self, "ANCHOR_BOTTOMRIGHT", 3, 33 };
@@ -2827,13 +2838,13 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 					self:Hide();
 				elseif not self:IsShown() then
 					if NS.mode == "MOUNTS" then
-						self:SetNormalTexture( "Interface\\Icons\\MountJournalPortrait" );
+						self:SetNormalTexture( 631718 );
 					elseif NS.mode == "PETS" then
-						self:SetNormalTexture( "Interface\\Icons\\PetJournalPortrait" );
+						self:SetNormalTexture( 631719 );
 					elseif NS.mode == "TOYS" then
-						self:SetNormalTexture( "Interface\\Icons\\Trade_Archaeology_ChestofTinyGlassAnimals" );
+						self:SetNormalTexture( 454046 );
 					elseif NS.mode == "APPEARANCES" then
-						self:SetNormalTexture( "Interface\\Icons\\inv_chest_cloth_17" );
+						self:SetNormalTexture( 132658 );
 					end
 					self:Show();
 				end
@@ -2844,7 +2855,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		template = false,
 		size = { 32, 32 },
 		setPoint = { "TOP", "#sibling", "BOTTOM", 0, -6 },
-		normalTexture = "Interface\\ICONS\\INV_Letter_15",
+		normalTexture = 133471,
 		tooltip = L["Buyouts"],
 		OnClick = function( self )
 			NS.SlashCmdHandler( "buyouts" );
@@ -3006,8 +3017,8 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 	hooksecurefunc( "AuctionFrameTab_OnClick", NS.AuctionFrameTab_OnClick );
 	-- Hook SideDressUpModelCloseButton
 	SideDressUpModelCloseButton:HookScript( "OnClick", NS.SideDressUpModelCloseButton_OnClick );
-	-- Track transmog updates to prevent having to unnecessarily check appearances
-	CollectionShopEventsFrame:RegisterEvent( "TRANSMOG_COLLECTION_UPDATED" );
+	-- Add new appearance sources to appearanceCollection to prevent unnecessary source lookups
+	CollectionShopEventsFrame:RegisterEvent( "TRANSMOG_COLLECTION_SOURCE_ADDED" );
 end
 --------------------------------------------------------------------------------------------------------------------------------------------
 -- CollectionShopEventsFrame
@@ -3016,14 +3027,66 @@ NS.Frame( "CollectionShopEventsFrame", UIParent, {
 	topLevel = true,
 	hidden = true,
 	OnEvent = function ( self, event, ... )
-		if			event == "ADDON_LOADED"						then	NS.OnAddonLoaded();
-			elseif	event == "PLAYER_LOGIN"						then	NS.OnPlayerLogin();
-			elseif	event == "AUCTION_ITEM_LIST_UPDATE"			then	NS.scan:OnAuctionItemListUpdate();
-			elseif	event == "CHAT_MSG_SYSTEM"					then	NS.scan:OnChatMsgSystem( ... );
-			elseif	event == "UI_ERROR_MESSAGE"					then	NS.scan:OnUIErrorMessage( ... );
-			elseif	event == "TRANSMOG_COLLECTION_UPDATED"		then	NS.OnTransmogCollectionUpdated();
-			elseif	event == "PLAYER_SPECIALIZATION_CHANGED"	then	NS.OnPlayerSpecializationChanged( ... );
-			elseif	event == "INSPECT_READY"					then	NS.OnInspectReady();
+		if		event == "ADDON_LOADED"						then
+			if IsAddOnLoaded( NS.addon ) then
+				if not NS.initialized then
+					-- Set Default SavedVariables
+					if not COLLECTIONSHOP_SAVEDVARIABLES then
+						COLLECTIONSHOP_SAVEDVARIABLES = NS.DefaultSavedVariables();
+					end
+					-- Set Default SavedVariablesPerCharacter
+					if not COLLECTIONSHOP_SAVEDVARIABLESPERCHARACTER then
+						COLLECTIONSHOP_SAVEDVARIABLESPERCHARACTER = NS.DefaultSavedVariablesPerCharacter();
+					end
+					-- Localize SavedVariables
+					NS.db = COLLECTIONSHOP_SAVEDVARIABLES;
+					NS.dbpc = COLLECTIONSHOP_SAVEDVARIABLESPERCHARACTER;
+					-- Upgrade if old version
+					if NS.db["version"] < NS.version then
+						NS.Upgrade();
+					end
+					-- Upgrade Per Character if old version
+					if NS.dbpc["version"] < NS.version then
+						NS.UpgradePerCharacter();
+					end
+					--
+					NS.initialized = true;
+				elseif IsAddOnLoaded( "Blizzard_AuctionUI" ) then
+					self:UnregisterEvent( "ADDON_LOADED" );
+					NS.Blizzard_AuctionUI_OnLoad();
+				end
+			end
+		elseif	event == "PLAYER_LOGIN"						then
+			self:UnregisterEvent( "PLAYER_LOGIN" );
+			InterfaceOptions_AddCategory( CollectionShopInterfaceOptionsPanel );
+			if #NS.playerLoginMsg > 0 then
+				for _,msg in ipairs( NS.playerLoginMsg ) do
+					NS.Print( msg );
+				end
+			end
+		elseif	event == "AUCTION_ITEM_LIST_UPDATE"			then	NS.scan:OnAuctionItemListUpdate();
+		elseif	event == "CHAT_MSG_SYSTEM"					then	NS.scan:OnChatMsgSystem( ... );
+		elseif	event == "UI_ERROR_MESSAGE"					then	NS.scan:OnUIErrorMessage( ... );
+		elseif	event == "TRANSMOG_COLLECTION_SOURCE_ADDED"	then
+			local arg1 = ...;
+			if not arg1 then return end
+			--
+			local sourceID = arg1;
+			local _,appearanceID = C_TransmogCollection.GetAppearanceSourceInfo( sourceID );
+			if appearanceID then
+				-- Update Appearances and Sources
+				NS.appearanceCollection.appearances[appearanceID] = { nil, true }; -- categoryID(1) not currently being used, isCollected(2)
+				NS.appearanceCollection.sources[sourceID] = { appearanceID, true }; -- isCollected(2)
+			end
+		elseif	event == "PLAYER_SPECIALIZATION_CHANGED"	then
+			local arg1 = select( 1, ... );
+			if not arg1 then return end
+			if arg1 == "player" then
+				AuctionFrameTab1:Click(); -- Go to browse tab if player changes specs while using addon, AH links are based on spec
+			end
+		elseif	event == "INSPECT_READY"					then
+			self:UnregisterEvent( "INSPECT_READY" );
+			NS.linkSpecID = GetInspectSpecialization( "player" );
 		end
 	end,
 	OnLoad = function( self )

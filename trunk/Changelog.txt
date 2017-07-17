@@ -1,3 +1,14 @@
+**2.0**
+
+- Release date: 07/16/2017
+- Time since last scan will now show "Live" in green when the Live checkbox is checked instead of showing the last time a GetAll scan was performed.
+- Around 20% less auctions are stored for comparison during scanning. They are simply not needed because they are not a Mount, Pet, Toy, or Appearance.
+- Around 10% more results will be shown in an Appearance mode Shop. This is due to no longer restricting Sources by type and also the inclusion of hidden Sources that Blizzard deems unobtainable or otherwise chooses to hide.
+- Appearances mode no longer immediately starts updating when choosing a mode. A faster modified updating from your collection is performed during Shop once after each GetAll scan or every time you perform a Live scan.
+- Added Mounts portrait to Options frame.
+- The change mode button (top left on AH tab) is now disabled while scanning to prevent accidental cancellation of a GetAll scan.
+- GetAll data for all realms will be wiped due to changes in required information.
+
 **1.15**
 
 - Release date: 06/13/2017
