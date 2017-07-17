@@ -4,8 +4,6 @@
 local NS = select( 2, ... );
 NS.addon = ...;
 NS.title = GetAddOnMetadata( NS.addon, "Title" );
-NS.versionString = GetAddOnMetadata( NS.addon, "Version" );
-NS.version = tonumber( NS.versionString );
 NS.UI = {};
 --------------------------------------------------------------------------------------------------------------------------------------------
 -- FRAME CREATION
@@ -420,6 +418,7 @@ NS.MinimapButton = function( name, texture, set )
 	local f = CreateFrame( "Button", name, Minimap );
 	f:SetFrameStrata( "MEDIUM" );
 	f.dbpc = set.dbpc; -- Saved position variable per character
+	f.docked = true;
 	local h,i,o,bg;
 	local fSize,hSize,iSize,oSize,bgSize;
 	local iOffsetX,iOffsetY,bgOffsetX,bgOffsetY;
@@ -430,24 +429,44 @@ NS.MinimapButton = function( name, texture, set )
 	f:RegisterForClicks( "LeftButtonUp", "RightButtonUp" );
 	f:RegisterForDrag( "LeftButton", "RightButton" );
 	local BeingDragged = function()
-		local xpos,ypos = GetCursorPosition();
-		local xmin,ymin = Minimap:GetLeft(), Minimap:GetBottom();
-		xpos = xmin - xpos / UIParent:GetScale() + 70;
-		ypos = ypos / UIParent:GetScale() - ymin - 70;
-		local pos = math.deg( math.atan2( ypos, xpos ) );
-		if pos < 0 then pos = pos + 360; end
-		NS.dbpc[f.dbpc] = pos;
-		f:UpdatePos();
+		-- Undocked
+		if not f.docked then
+			f:StartMoving();
+		-- Docked
+		else
+			local xpos,ypos = GetCursorPosition();
+			local xmin,ymin = Minimap:GetLeft(), Minimap:GetBottom();
+			xpos = xmin - xpos / UIParent:GetScale() + 70;
+			ypos = ypos / UIParent:GetScale() - ymin - 70;
+			local pos = math.deg( math.atan2( ypos, xpos ) );
+			if pos < 0 then pos = pos + 360; end
+			NS.dbpc[f.dbpc] = pos;
+			f:UpdatePos();
+		end
 	end
 	f:SetScript( "OnDragStart", function()
 		f:SetScript( "OnUpdate", BeingDragged );
 	end );
 	f:SetScript( "OnDragStop", function()
 		f:SetScript( "OnUpdate", nil );
+		-- Undocked
+		if not f.docked then
+			f:StopMovingOrSizing();
+			local point, relativeTo, relativePoint, xOffset, yOffset = f:GetPoint( 1 );
+			NS.dbpc[f.dbpc] = ( point and point == relativePoint and xOffset and yOffset ) and { point, xOffset, yOffset } or { "CENTER", 0, 150 };
+		end
 	end );
 	function f:UpdatePos()
 		f:ClearAllPoints();
-		f:SetPoint( "TOPLEFT", "Minimap", "TOPLEFT", arc - ( radius * cos( NS.dbpc[f.dbpc] ) ), ( radius * sin( NS.dbpc[f.dbpc] ) ) - arc );
+		-- Undocked
+		if not f.docked then
+			f:SetParent( UIParent );
+			f:SetPoint( unpack( NS.dbpc[f.dbpc] ) );
+		-- Docked
+		else
+			f:SetParent( Minimap );
+			f:SetPoint( "TOPLEFT", "Minimap", "TOPLEFT", arc - ( radius * cos( NS.dbpc[f.dbpc] ) ), ( radius * sin( NS.dbpc[f.dbpc] ) ) - arc );
+		end
 	end
 	function f:UpdateSize( large )
 		h:ClearAllPoints();
@@ -694,4 +713,81 @@ NS.GetWeeklyQuestResetTime = function()
 		resetTime = resetTime + 86400;
 	end
 	return resetTime;
+end
+--
+NS.BatchDataLoop = function( set )
+	--------------------------------------------------------
+	-- Set can including the following:
+	--------------------------------------------------------
+	-- data 				(required)
+	-- batchSize
+	-- attemptsMax
+	-- EndBatchFunction
+	-- AbortFunction
+	-- DataFunction 		(required)
+	-- CompleteFunction 	(required)
+	--------------------------------------------------------
+	local dataNum,batchNum,batchRetry,AdvanceBatch,NextData;
+	--
+	AdvanceBatch = function()
+		if batchNum == batchSize or dataNum == #set.data then
+			-- Batch Complete
+			if set.EndBatchFunction then
+				set.EndBatchFunction( set.data, dataNum );
+			end
+			--
+			if batchRetry.count > 0 and ( not batchRetry.inProgress or ( batchRetry.inProgress and batchRetry.attempts < batchRetry.attemptsMax ) ) then
+				-- Retry Batch
+				batchRetry.inProgress = true;
+				batchRetry.attempts = batchRetry.attempts + 1;
+				dataNum = dataNum - batchNum; -- Reset dataNum to start of batch for retry
+				batchNum = 1;
+				return C_Timer.After( batchRetry.attempts * 0.01, NextData );
+			else
+				-- Fresh Batch
+				batchRetry.inProgress = false;
+				batchRetry.count = 0;
+				batchRetry.attempts = 0;
+				wipe( batchRetry.batchNum );
+				batchNum = 1;
+				return C_Timer.After( 0.001, NextData );
+			end
+		else
+			-- Increment Batch
+			batchNum = batchNum + 1;
+			return NextData();
+		end
+	end
+	--
+	NextData = function()
+		dataNum = dataNum + 1;
+		--
+		if set.AbortFunction and set.AbortFunction() then return end
+		if dataNum > #set.data then return set.CompleteFunction(); end -- Data complete
+		--
+		if not batchRetry.inProgress or ( batchRetry.inProgress and batchRetry.batchNum[batchNum] ) then -- Not currently retrying or retrying and match
+			local dataReturn = set.DataFunction( set.data, dataNum ); -- retry, complete or {anything-else}
+			if dataReturn == "retry" then
+				-- Add new retry
+				if not batchRetry.inProgress then
+					batchRetry.count = batchRetry.count + 1;
+					batchRetry.batchNum[batchNum] = true;
+				end
+			elseif dataReturn == "complete" then
+				-- Completed early, no more data required
+				return set.CompleteFunction();
+			elseif batchRetry.inProgress then
+				-- Remove successful retry
+				batchRetry.count = batchRetry.count - 1;
+				batchRetry.batchNum[batchNum] = nil;
+			end
+		end
+		return AdvanceBatch();
+	end
+	--
+	dataNum = 0;
+	batchNum = 1;
+	batchSize = set.batchSize or 50;
+	batchRetry = { inProgress = false, count = 0, attempts = 0, attemptsMax = set.attemptsMax or 50, batchNum = {} };
+	NextData();
 end

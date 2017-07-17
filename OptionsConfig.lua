@@ -11,9 +11,12 @@ NS.options.cfg = {
 	mainFrame = {
 		width		= 567,
 		height		= 394,
+		portrait	= true,
 		frameStrata	= "MEDIUM",
 		frameLevel	= "TOP",
-		Init		= function( MainFrame ) end,
+		Init		= function( MainFrame )
+			SetPortraitToTexture( MainFrame.portrait, "Interface\\Icons\\MountJournalPortrait" );
+		end,
 		OnShow		= function( MainFrame )
 			MainFrame:ClearAllPoints();
 			MainFrame:SetPoint( "CENTER", 0, 0 );
