@@ -3,7 +3,7 @@
 --------------------------------------------------------------------------------------------------------------------------------------------
 local NS = select( 2, ... );
 local L = NS.localization;
-NS.versionString = "2.0";
+NS.versionString = "2.01";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -1280,6 +1280,7 @@ function NS.scan:Start( type )
 	AuctionFrameCollectionShop_JumbotronFrame:Hide();
 	AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_BuyoutButton:Disable();
 	AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_CancelButton:Disable();
+	AuctionFrameCollectionShop_LiveCheckButton:Disable();
 	AuctionFrameCollectionShop_ScanButton:Disable();
 	AuctionFrameCollectionShop_BuyAllButton:Disable();
 	NS.disableFlyoutChecks = true;
@@ -1541,7 +1542,7 @@ function NS.scan:GetAuctionItemInfo( index )
 					if quality > 1 then -- Transmoggable gear is uncommon or higher quality
 						appearanceID,sourceID = NS.GetAppearanceSourceInfo( itemLink );
 						if not appearanceID then
-							return "retry";
+							return "retry"; -- Retry for appearanceID or if item has none then prevent inclusion after max retries
 						end
 						if not NS.FindKeyByValue( data["appearanceSources"], sourceID ) then
 							data["appearanceSources"][#data["appearanceSources"] + 1] = sourceID; -- List of unique sources to update appearanceCollection
@@ -1735,7 +1736,7 @@ function NS.scan:UpdateAppearanceCollection()
 	--
 	NS.BatchDataLoop( {
 		data = data1["appearanceSources"],
-		attemptsMax = 10,
+		attemptsMax = 50,
 		AbortFunction = function()
 			if self.status ~= "scanning" then
 				return true;
@@ -1754,10 +1755,11 @@ function NS.scan:UpdateAppearanceCollection()
 						if not NS.appearanceCollection.appearances[appearanceID] then
 							local appearanceCollected = sourceCollected;
 							if not sourceCollected then
-								local sources = C_TransmogCollection.GetAppearanceSources( appearanceID );
-								if sources then -- Empty if uncollected appearance has only unlisted sources
+								local sources = C_TransmogCollection.GetAllAppearanceSources( appearanceID );
+								if sources then -- You never know, this API is wonky sometimes
 									for i = 1, #sources do
-										if sources[i].isCollected then
+										local _,_,_,_,isCollected = C_TransmogCollection.GetAppearanceSourceInfo( sources[i] );
+										if isCollected then
 											appearanceCollected = true;
 											break; -- Stop ASAP
 										end
@@ -2070,6 +2072,7 @@ function NS.scan:Complete( cancelMessage )
 	NS.AuctionSortButtons_Action( "Enable" );
 	NS.disableFlyoutChecks = false;
 	AuctionFrameCollectionShop_FlyoutPanel_ScrollFrame:Update();
+	AuctionFrameCollectionShop_LiveCheckButton:Enable();
 	AuctionFrameCollectionShop_ScanButton:Reset();
 	AuctionFrameCollectionShop_ShopButton:Reset();
 end
