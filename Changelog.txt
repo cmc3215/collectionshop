@@ -1,3 +1,8 @@
+**2.02**
+
+- Release date: 07/18/2017
+- Bug fix: In rare situations an Appearance Shop would get stuck at "Filtering, one moment please...".
+
 **2.01**
 
 - Release date: 07/18/2017
