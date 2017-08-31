@@ -3,7 +3,7 @@
 --------------------------------------------------------------------------------------------------------------------------------------------
 local NS = select( 2, ... );
 local L = NS.localization;
-NS.versionString = "2.03";
+NS.versionString = "2.04";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -866,7 +866,7 @@ NS.AuctionGroup_OnClick = function( groupKey )
 end
 --
 NS.AuctionGroup_AuctionMissing = function( groupKey, OnMessageOnly )
-	PlaySound( "SPELL_Shadow_Fizzle" );
+	PlaySound( 1427 ); -- SPELL_Shadow_Fizzle
 	local itemPrice = NS.auction.data.groups[groupKey][5][1][1]; -- auctions(5), first auction(1), itemPrice(1)
 	local itemLink = NS.auction.data.groups[groupKey][5][1][2]; -- auctions(5), first auction(1), itemLink(2)
 	local itemId = NS.auction.data.groups[groupKey][5][1][6]; -- auctions(5), first auction(1), itemId(6)
@@ -2017,7 +2017,7 @@ function NS.scan:Complete( cancelMessage )
 					-- Appearance
 					if NS.db["undressCharacter"] then
 						SideDressUpModel:Undress();
-						PlaySound( "gsTitleOptionOK" ); -- Keeps the sound consistent with the ResetButton click below
+						PlaySound( 798 ); -- gsTitleOptionOK: Keeps the sound consistent with the ResetButton click below
 					else
 						SideDressUpModelResetButton:Click(); -- ^^
 					end
@@ -2475,7 +2475,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		size = { 733, ( 30 * 9 - 5 ) },
 		setPoint = { "TOPLEFT", "$parent_NameSortButton", "BOTTOMLEFT", 1, -5 },
 		buttonTemplate = "AuctionFrameCollectionShop_ScrollFrameButtonTemplate",
-		udpate = {
+		update = {
 			numToDisplay = 9,
 			buttonHeight = 30,
 			UpdateFunction = function( sf )
@@ -2904,7 +2904,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		size = { 242, ( 20 * 17 - 5 ) },
 		setPoint = { "TOPLEFT", 1, -27 },
 		buttonTemplate = "AuctionFrameCollectionShop_FlyoutPanel_ScrollFrameButtonTemplate",
-		udpate = {
+		update = {
 			numToDisplay = 17,
 			buttonHeight = 20,
 			UpdateFunction = function( sf )

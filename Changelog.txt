@@ -1,3 +1,9 @@
+**2.04**
+
+- Release date: 08/30/2017
+- TOC Updated for patch 7.3
+- Bug fix: Lua error in patch 7.3 on PlaySound() API call.
+
 **2.03**
 
 - Release date: 08/04/2017
