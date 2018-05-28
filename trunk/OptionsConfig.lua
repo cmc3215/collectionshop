@@ -9,8 +9,8 @@ local L = NS.localization;
 NS.options.cfg = {
 	--
 	mainFrame = {
-		width		= 567,
-		height		= 394,
+		width		= 600,
+		height		= 420,
 		portrait	= true,
 		frameStrata	= "MEDIUM",
 		frameLevel	= "TOP",
@@ -94,7 +94,7 @@ NS.options.cfg = {
 				end
 				NS.TextFrame( "TSMItemValueSourceLabel", SubFrame, L["Item Value Source"], {
 					setPoint = {
-						{ "TOPLEFT", "$parentMaxItemPriceMode4Editbox", "BOTTOMLEFT", -4, -8 },
+						{ "TOPLEFT", "$parentMaxItemPriceMode4Editbox", "BOTTOMLEFT", -4, -12 },
 						{ "RIGHT", -8 },
 					},
 					fontObject = "GameFontHighlight",
@@ -145,6 +145,11 @@ NS.options.cfg = {
 					},
 					fontObject = "GameFontNormalSmall",
 				} );
+				NS.CheckButton( "AutoselectAfterAuctionUnavailableCheckButton", SubFrame, L["Auto-select After Auction Unavailable"], {
+					setPoint = { "TOPLEFT", "$parentTSMItemValueSourceEditbox", "BOTTOMLEFT", -8, -12 },
+					tooltip = L["When not using BuyAll, this\noption will auto-select and scroll\nto the next cheapest auction of the\nsame appearance, same pet, etc.\n\nWhen using BuyAll, this option is\nignored because the next (first)\nauction is always auto-selected."],
+					db = "autoselectAfterAuctionUnavailable",
+				} );
 			end,
 			Refresh			= function( SubFrame )
 				local sfn = SubFrame:GetName();
@@ -153,6 +158,7 @@ NS.options.cfg = {
 					_G[sfn .. "MaxItemPriceMode" .. i .. "Editbox"]:SetNumber( NS.db["maxItemPriceCopper"][NS.modes[i]] / 10000 ); -- Convert copper to gold
 				end
 				_G[sfn .. "TSMItemValueSourceEditbox"]:SetText( NS.db["tsmItemValueSource"] );
+				_G[sfn .. "AutoselectAfterAuctionUnavailableCheckButton"]:SetChecked( NS.db["autoselectAfterAuctionUnavailable"] );
 			end,
 		},
 		{
@@ -162,7 +168,7 @@ NS.options.cfg = {
 			Init			= function( SubFrame )
 				NS.Button( "NameColumnHeaderButton", SubFrame, NAME, {
 					template = "CollectionShop_AuctionsWon_ColumnHeaderButtonTemplate",
-					size = { 232, 19 },
+					size = { 253, 19 },
 					setPoint = { "TOPLEFT", "$parent", "TOPLEFT", -2, 0 },
 				} );
 				NS.Button( "ModeColumnHeaderButton", SubFrame, L["Mode"], {
@@ -185,11 +191,11 @@ NS.options.cfg = {
 					end,
 				} );
 				NS.ScrollFrame( "ScrollFrame", SubFrame, {
-					size = { 520, ( 26 * 10 - 5 ) },
+					size = { 553, ( 26 * 11 - 5 ) },
 					setPoint = { "TOPLEFT", "$parentNameColumnHeaderButton", "BOTTOMLEFT", 1, -3 },
 					buttonTemplate = "CollectionShop_AuctionsWon_ScrollFrameButtonTemplate",
 					update = {
-						numToDisplay = 10,
+						numToDisplay = 11,
 						buttonHeight = 26,
 						alwaysShowScrollBar = true,
 						UpdateFunction = function( sf )
@@ -227,7 +233,7 @@ NS.options.cfg = {
 					},
 				} );
 				NS.TextFrame( "AuctionsWon", SubFrame, "", {
-					size = { 520, 53 },
+					size = { 553, 53 },
 					setPoint = { "TOP", "#sibling", "BOTTOM" },
 					fontObject = "GameFontNormal",
 					justifyH = "CENTER",
@@ -237,7 +243,7 @@ NS.options.cfg = {
 				local sfn = SubFrame:GetName();
 				--
 				_G[sfn .. "ScrollFrame"]:Reset();
-				_G[sfn .. "AuctionsWonText"]:SetText( string.format( L["%s\n%sBuyout tracking is reset when closing %s|r"], #NS.auctionsWon .. " " .. GREEN_FONT_COLOR_CODE .. ( #NS.auctionsWon == 1 and L["Buyout"] or L["Buyouts"] ) .. FONT_COLOR_CODE_CLOSE .. ( NS.copperAuctionsWon > 0 and " (" .. NS.MoneyToString( NS.copperAuctionsWon, HIGHLIGHT_FONT_COLOR_CODE ) .. ")" or "" ), RED_FONT_COLOR_CODE, NS.title ) );
+				_G[sfn .. "AuctionsWonText"]:SetText( string.format( L["%s\n%sBuyout tracking is reset when %s is closed|r"], #NS.auctionsWon .. " " .. GREEN_FONT_COLOR_CODE .. ( #NS.auctionsWon == 1 and L["Buyout"] or L["Buyouts"] ) .. FONT_COLOR_CODE_CLOSE .. ( NS.copperAuctionsWon > 0 and " (" .. NS.MoneyToString( NS.copperAuctionsWon, HIGHLIGHT_FONT_COLOR_CODE ) .. ")" or "" ), RED_FONT_COLOR_CODE, NS.title ) );
 			end,
 		},
 		{
@@ -325,7 +331,7 @@ NS.options.cfg = {
 			mainFrameTitle	= NS.title,
 			tabText			= HELP_LABEL,
 			Init			= function( SubFrame )
-				NS.TextFrame( "Description", SubFrame, string.format( L["%s version %s"], NS.title, NS.versionString ), {
+				NS.TextFrame( "Description", SubFrame, string.format( L["%s version %s for patch %s"], NS.title, NS.versionString, NS.releasePatch ), {
 					setPoint = {
 						{ "TOPLEFT", "$parent", "TOPLEFT", 8, -8 },
 						{ "RIGHT", -8 },
@@ -362,7 +368,7 @@ NS.options.cfg = {
 				} );
 				NS.TextFrame( "NeedMoreHelp", SubFrame, string.format(
 						L["%sQuestions, Comments, Bugs, and Suggestions|r\n\n" ..
-						"https://mods.curse.com/addons/wow/collectionshop"],
+						"https://www.curseforge.com/wow/addons/collectionshop"],
 						NORMAL_FONT_COLOR_CODE
 					), {
 					setPoint = {

@@ -225,14 +225,14 @@
 	<!-- ### CollectionShop_AuctionsWon_ScrollFrameButtonTemplate ### -->
 	<Button name="CollectionShop_AuctionsWon_ScrollFrameButtonTemplate" hidden="false" virtual="true">
 		<Size>
-			<AbsDimension x="520" y="26"/><!-- Width is all elements combined w/offsets -->
+			<AbsDimension x="553" y="26"/><!-- Width is all elements combined w/offsets -->
 		</Size>
 		<!-- Frames -->
 		<Frames>
 			<!-- [Name] -->
 			<Button name="$parent_Name">
 				<Size>
-					<AbsDimension x="220" y="26"/>
+					<AbsDimension x="241" y="26"/>
 				</Size>
 				<Anchors>
 					<Anchor point="LEFT">
