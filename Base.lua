@@ -33,7 +33,7 @@ NS.Tooltip = function( frame, tooltip, tooltipAnchor )
 	frame.tooltipAnchor = tooltipAnchor;
 	frame:SetScript( "OnEnter", function( self )
 		GameTooltip:SetOwner( unpack( self.tooltipAnchor ) );
-		local tooltipText = type( self.tooltip ) ~= "function" and self.tooltip or self.tooltip();
+		local tooltipText = type( self.tooltip ) ~= "function" and self.tooltip or self.tooltip( self );
 		if tooltipText then -- Function may have only SetHyperlink, etc. without returning text
 			GameTooltip:SetText( tooltipText );
 		end
@@ -116,6 +116,9 @@ NS.InputBox = function( name, parent, set  )
 	end
 	if set.OnTextChanged then
 		f:SetScript( "OnTextChanged", set.OnTextChanged );
+	end
+	if set.OnLoad then
+		set.OnLoad( f );
 	end
 	return f;
 end

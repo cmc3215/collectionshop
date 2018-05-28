@@ -3,7 +3,8 @@
 --------------------------------------------------------------------------------------------------------------------------------------------
 local NS = select( 2, ... );
 local L = NS.localization;
-NS.versionString = "2.06";
+NS.releasePatch = "7.3.5";
+NS.versionString = "2.07";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -89,7 +90,7 @@ for i = 1, #NS.ridingSpells do
 end
 NS.cachedDressUpIds = {};
 NS.mountInfo = {
-	-- As of 08/31/2017
+	-- As of 05/26/2018
 	--[mountItemId] = { displayID, spellID }, -- creatureName -- itemName
 	[71718] = { 17011, 101573 }, -- Swift Shorestrider -- Swift Shorestrider
 	[52200] = { 25279, 73313 }, -- Crimson Deathcharger -- Reins of the Crimson Deathcharger
@@ -131,7 +132,7 @@ NS.mountInfo = {
 	[49290] = { 34655, 65917 }, -- Magic Rooster -- Magic Rooster Egg
 };
 NS.petInfo = {
-	-- As of 08/31/2017
+	-- As of 05/26/2018
 	--[companionPetItemId] = { speciesID, creatureID }, -- itemName
 	[151645] = { 2001, 117340 }, -- Model D1-BB-L3R
 	[151269] = { 2002, 117341 }, -- Naxxy
@@ -313,7 +314,7 @@ NS.petInfo = {
 	[146953] = { 2042, 120397 }, -- Scraps
 };
 NS.toyInfo = {
-	-- As of 08/31/2017
+	-- As of 05/26/2018
 	--[toyItemId] = { catNum, subCatNum }, -- itemName
 	[151652] = { 6, 1 }, -- Wormhole Generator: Argus
 	[144393] = { 12, 4 }, -- Portable Yak Wash
@@ -402,6 +403,17 @@ NS.SELECT_AN_AUCTION = function()
 	return string.format( L["Select an auction to buy or click \"Buy All\""] .. ( NS.mode == "APPEARANCES" and "\n" .. L["%sEach result is the lowest buyout auction for an|r %s"] or "" ), HIGHLIGHT_FONT_COLOR_CODE, NS.modeColorCode .. ( NS.shopAppearancesBy == "appearance" and L["Appearance"] or L["Appearance Source"] ) .. FONT_COLOR_CODE_CLOSE );
 end
 --------------------------------------------------------------------------------------------------------------------------------------------
+-- Record enabled addons (used for Auctioneer check)
+--------------------------------------------------------------------------------------------------------------------------------------------
+local addonEnabled = {};
+local character = UnitName( "player" );
+for i = 1, GetNumAddOns() do
+	local name,_,_,loadable = GetAddOnInfo( i );
+	if loadable and GetAddOnEnableState( character, i ) > 0 then
+		addonEnabled[name] = true;
+	end
+end
+--------------------------------------------------------------------------------------------------------------------------------------------
 -- Default SavedVariables/PerCharacter & Upgrade
 --------------------------------------------------------------------------------------------------------------------------------------------
 NS.DefaultSavedVariables = function()
@@ -415,6 +427,7 @@ NS.DefaultSavedVariables = function()
 		["maxItemPriceCopper"] = { [NS.modes[1]] = 0, [NS.modes[2]] = 0, [NS.modes[3]] = 0, [NS.modes[4]] = 0 },
 		["tsmItemValueSource"] = "",
 		["modeFilters"] = { [NS.modes[1]] = {}, [NS.modes[2]] = {}, [NS.modes[3]] = {}, [NS.modes[4]] = {} },
+		["autoselectAfterAuctionUnavailable"] = true,
 	};
 end
 --
@@ -434,6 +447,10 @@ NS.Upgrade = function()
 	-- 2.0
 	if version < 2.0 then
 		wipe( NS.db["getAllScan"] ); -- New data structure and information requirements
+	end
+	-- 2.07
+	if version < 2.07 then
+		NS.db["autoselectAfterAuctionUnavailable"] = vars["autoselectAfterAuctionUnavailable"]; -- New db variable
 	end
 	--
 	NS.db["version"] = NS.version;
@@ -468,6 +485,10 @@ NS.AuctionFrameTab_OnClick = function( self, button, down, index ) -- AuctionFra
 		CollectionShopEventsFrame:RegisterEvent( "INSPECT_READY" );
 		CollectionShopEventsFrame:RegisterEvent( "UI_ERROR_MESSAGE" );
 		NotifyInspect( "player" );
+		-- Incompatible with Auctioneer
+		if addonEnabled["Auc-Advanced"] then
+			NS.Print( RED_FONT_COLOR_CODE .. L["Warning: This addon is incompatible with Auctioneer."] .. FONT_COLOR_CODE_CLOSE );
+		end
 	elseif AuctionFrameCollectionShop:IsShown() then
 		AuctionFrameCollectionShop:Hide();
 	end
@@ -955,9 +976,19 @@ NS.AuctionGroup_AuctionMissing = function( groupKey, OnMessageOnly )
 			if NS.buyAll then
 				NS.AuctionGroup_OnClick( 1 );
 			else
-				NS.NextAdjustScroll = true;
-				NS.AuctionGroup_OnClick( NS.scan.query.auction.groupKey );
-				NS.Print( string.format( NS.mode == "APPEARANCES" and L["Selecting %s for %s, same %s."] or L["Selecting %s for %s, next cheapest."], NS.scan.query.auction[2], NS.MoneyToString( NS.scan.query.auction[1] ), ( NS.mode == "APPEARANCES" and ( NS.shopAppearancesBy == "appearance" and L["appearance"] or L["source"] ) or nil ) ) );
+				if NS.db["autoselectAfterAuctionUnavailable"] then
+					-- Auto-select ON
+					NS.NextAdjustScroll = true;
+					NS.AuctionGroup_OnClick( NS.scan.query.auction.groupKey );
+					NS.Print( string.format( NS.mode == "APPEARANCES" and L["Selecting %s for %s, same %s."] or L["Selecting %s for %s, next cheapest."], NS.scan.query.auction[2], NS.MoneyToString( NS.scan.query.auction[1] ), ( NS.mode == "APPEARANCES" and ( NS.shopAppearancesBy == "appearance" and L["appearance"] or L["source"] ) or nil ) ) );
+				else
+					-- Auto-select OFF
+					-- Treat exactly like group removed when more groups exist
+					NS.AuctionGroup_Deselect();
+					NS.StatusFrame_Message( NS.SELECT_AN_AUCTION() );
+					AuctionFrameCollectionShop_BuyAllButton:Enable();
+					OnMessageOnly(); -- Callback
+				end
 			end
 		end
 	end
@@ -1270,6 +1301,7 @@ function NS.scan:Reset()
 	self.type = nil;
 	self.status = "ready"; -- ready, scanning, selected, buying
 	self.ailu = "LISTEN";
+	self.selectedOwner = nil;
 end
 --
 function NS.scan:Start( type )
@@ -1277,9 +1309,12 @@ function NS.scan:Start( type )
 	--
 	self.status = "scanning";
 	self.type = type;
+	self.selectedOwner = nil;
 	wipe( self.query.qualities );
 	NS.AuctionSortButtons_Action( "Disable" );
 	AuctionFrameCollectionShop_JumbotronFrame:Hide();
+	AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_SelectedOwnerLabel:Hide();
+	AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_SelectedOwnerEditbox:Hide();
 	AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_BuyoutButton:Disable();
 	AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_CancelButton:Disable();
 	AuctionFrameCollectionShop_LiveCheckButton:Disable();
@@ -1522,7 +1557,7 @@ end
 --
 function NS.scan:GetAuctionItemInfo( index )
 	local data = ( self.type == "GETALL" and NS.db["getAllScan"][NS.realmName]["data"] ) or ( self.type == "SHOP" and NS.auction.data.live );
-	local _,texture,count,quality,_,level,levelColHeader,_,_,buyoutPrice,_,_,_,_,_,_,itemId = GetAuctionItemInfo( "list", index );
+	local _,texture,count,quality,_,level,levelColHeader,_,_,buyoutPrice,_,_,_,owner,ownerFullName,_,itemId = GetAuctionItemInfo( "list", index );
 	local itemLink;
 	if ( self.type == "SHOP" or self.type == "SELECT" ) and NS.db["maxItemPriceCopper"][NS.mode] > 0 and buyoutPrice > NS.db["maxItemPriceCopper"][NS.mode] then
 		return "maxprice";
@@ -1568,6 +1603,7 @@ function NS.scan:GetAuctionItemInfo( index )
 					sourceID,
 				};
 			elseif self.type == "SELECT" and itemLink == self.query.auction[2] then -- itemLink(2)
+				self.selectedOwner = ( ownerFullName and ownerFullName ) or ( owner and owner ) or nil; -- ownerFullName is empty when player from same realm
 				return "found";
 			end
 		end
@@ -1986,6 +2022,7 @@ function NS.scan:Complete( cancelMessage )
 				NS.AuctionSortButtons_Action( "Enable" );
 				NS.disableFlyoutChecks = false;
 				AuctionFrameCollectionShop_FlyoutPanel_ScrollFrame:Update();
+				AuctionFrameCollectionShop_LiveCheckButton:Enable();
 				AuctionFrameCollectionShop_ScanButton:Reset();
 				AuctionFrameCollectionShop_ShopButton:Reset();
 			end );
@@ -2039,6 +2076,9 @@ function NS.scan:Complete( cancelMessage )
 					NS.Print( string.format( L["%s cannot be previewed, no model data. Please report to addon developer"], self.query.auction[2] ) ); -- itemLink(2)
 				end
 			end
+			AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_SelectedOwnerEditbox:SetText( ( self.selectedOwner and self.selectedOwner or L["Unknown"] ) );
+			AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_SelectedOwnerLabel:Show();
+			AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_SelectedOwnerEditbox:Show();
 			NS.BuyoutFrame_Activate();
 			AuctionFrameCollectionShop_BuyAllButton:Enable();
 		end
@@ -2685,6 +2725,33 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		hidden = true,
 		setAllPoints = true,
 	} );
+	NS.TextFrame( "_SelectedOwnerLabel", AuctionFrameCollectionShop_DialogFrame_BuyoutFrame, L["Seller:"], {
+		size = { 50, 20 },
+		setPoint = { "LEFT", "$parent", "LEFT", 7, 0 },
+	} );
+	NS.InputBox( "_SelectedOwnerEditbox", AuctionFrameCollectionShop_DialogFrame_BuyoutFrame, {
+		size = { 150, 20 },
+		setPoint = { "LEFT", "#sibling", "RIGHT", 5, 0 },
+		OnEnterPressed = function( self )
+			self:ClearFocus();
+		end,
+		OnEditFocusGained = function( self )
+			self:HighlightText();
+			self.originalValue = self:GetText();
+		end,
+		OnEditFocusLost = function( self )
+			self:HighlightText( 0, 0 );
+			self:SetText( self.originalValue );
+		end,
+		tooltip = function( self )
+			if self:GetText() == L["Unknown"] then
+				return L["Try reselecting the auction\nto load the seller's name."];
+			end
+		end,
+		OnLoad = function( self )
+			self.tooltipAnchor = { self, "ANCHOR_TOPLEFT", -7, 0 };
+		end,
+	} );
 	NS.Button( "_CancelButton", AuctionFrameCollectionShop_DialogFrame_BuyoutFrame, CANCEL, {
 		size = { 120, 30 },
 		setPoint = { "LEFT", "$parent", "CENTER", 5, 0 },
@@ -2805,7 +2872,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		template = "InterfaceOptionsSmallCheckButtonTemplate",
 		size = { 16, 16 },
 		setPoint = { "RIGHT", "$parent_ScanButton", "LEFT", -30, 0 },
-		tooltip = L["Scan Auction House live when\npressing \"Shop\" instead of\nusing GetAll scan data\n\nLive scans only search\nthe pages required for the\nfilters you checked and may\nbe faster in certain modes or\nwhen using a low max price"],
+		tooltip = L["Scan Auction House live when\npressing \"Shop\" instead of\nusing GetAll scan data.\n\nLive scans only search\nthe pages required for the\nfilters you checked and may\nbe faster in certain modes or\nwhen using a low max price."],
 		db = "live",
 		OnClick = function()
 			NS.Reset();

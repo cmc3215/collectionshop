@@ -1,3 +1,13 @@
+**2.07**
+
+- Release date: 05/28/2017
+- New option "Auto-select After Auction Unavailable." This option toggles automatically searching for and scrolling to the next cheapest auction of the same appearance, same pet, etc. when an auction is no longer available.
+- New "Seller:" text box added that contains the seller name for the selected auction. The idea being that players can not only see who is selling the item, but also click into the box to copy the seller's name for contacting them via in-game mail.
+- New warning message added concerning incompatibility with the Auctioneer addon.
+- Bug fix: The Live checkbox was being disabled after an item that was no longer available was removed without an additional item being selected.
+- Added the game patch number that CollectionShop was created for to the Help tab.
+- Updated Curse URL on Help tab.
+
 **2.06**
 
 - Release date: 10/01/2017
