@@ -1,6 +1,6 @@
 ## Interface: 70300
 ## Title: CollectionShop
-## Version: 2.08
+## Version: 2.09
 ## Author: Clinton Caldwell
 ## Notes: Find and buy the lowest buyout Mounts, Pets, Toys, and Appearances.
 ## SavedVariables: COLLECTIONSHOP_SAVEDVARIABLES
