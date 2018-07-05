@@ -1,6 +1,15 @@
+**2.08**
+
+- Release date: 07/04/2018
+- Added item name filter.
+- Added level filters to Appearances mode.
+- Added "Crafted by a Profession" filter.
+- Added tooltip to BuyAll button to briefly describe what it does.
+- New items added for patch 8.0.1.
+
 **2.07**
 
-- Release date: 05/28/2017
+- Release date: 05/28/2018
 - New option "Auto-select After Auction Unavailable." This option toggles automatically searching for and scrolling to the next cheapest auction of the same appearance, same pet, etc. when an auction is no longer available.
 - New "Seller:" text box added that contains the seller name for the selected auction. The idea being that players can not only see who is selling the item, but also click into the box to copy the seller's name for contacting them via in-game mail.
 - New warning message added concerning incompatibility with the Auctioneer addon.

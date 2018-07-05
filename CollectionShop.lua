@@ -4,7 +4,7 @@
 local NS = select( 2, ... );
 local L = NS.localization;
 NS.releasePatch = "7.3.5";
-NS.versionString = "2.07";
+NS.versionString = "2.08";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -90,8 +90,15 @@ for i = 1, #NS.ridingSpells do
 end
 NS.cachedDressUpIds = {};
 NS.mountInfo = {
-	-- As of 05/26/2018
+	-- As of 07/04/2018
 	--[mountItemId] = { displayID, spellID }, -- creatureName -- itemName
+	[153594] = { 80513, 256123 }, -- Xiwyllag ATV -- Xiwyllag ATV
+	[161134] = { 81816, 261437 }, -- Mecha-Mogul Mk2 -- Mecha-Mogul Mk2
+	[163573] = { 81690, 260175 }, -- Goldenmane -- Goldenmane's Reins
+	[163574] = { 81694, 260174 }, -- Terrified Pack Mule -- Chewed-On Reins of the Terrified Pack Mule
+	[163575] = { 76706, 243795 }, -- Leaping Veinseeker -- Reins of a Tamed Bloodfeaster
+	[163576] = { 75324, 237286 }, -- Dune Scavenger -- Captured Dune Scavenger
+	[163131] = { 73253, 278803 }, -- Great Sea Ray -- Great Sea Ray
 	[71718] = { 17011, 101573 }, -- Swift Shorestrider -- Swift Shorestrider
 	[52200] = { 25279, 73313 }, -- Crimson Deathcharger -- Reins of the Crimson Deathcharger
 	[34060] = { 22719, 44153 }, -- Flying Machine -- Flying Machine
@@ -132,8 +139,9 @@ NS.mountInfo = {
 	[49290] = { 34655, 65917 }, -- Magic Rooster -- Magic Rooster Egg
 };
 NS.petInfo = {
-	-- As of 05/26/2018
+	-- As of 07/04/2018
 	--[companionPetItemId] = { speciesID, creatureID }, -- itemName
+	[152878] = { 2201, 139743 }, -- Enchanted Tiki Mask
 	[151645] = { 2001, 117340 }, -- Model D1-BB-L3R
 	[151269] = { 2002, 117341 }, -- Naxxy
 	[151569] = { 2063, 124389 }, -- Sneaky Marmot
@@ -207,7 +215,6 @@ NS.petInfo = {
 	[21308] = { 118, 15706 }, -- Winter Reindeer
 	[48120] = { 236, 35399 }, -- Obsidian Hatchling
 	[132519] = { 1886, 106210 }, -- Trigger
-	[136921] = { 1886, 106210 }, -- Trigger
 	[136924] = { 1889, 106278 }, -- Felbat Pup
 	[44970] = { 205, 33194 }, -- Dun Morogh Cub
 	[48122] = { 237, 35397 }, -- Ravasaur Hatchling
@@ -314,8 +321,10 @@ NS.petInfo = {
 	[146953] = { 2042, 120397 }, -- Scraps
 };
 NS.toyInfo = {
-	-- As of 05/26/2018
+	-- As of 07/04/2018
 	--[toyItemId] = { catNum, subCatNum }, -- itemName
+	[160740] = { 12, 6 }, -- Croak Crock
+	[160751] = { 12, 6 }, -- Dance of the Dead
 	[151652] = { 6, 1 }, -- Wormhole Generator: Argus
 	[144393] = { 12, 4 }, -- Portable Yak Wash
 	[142265] = { 12, 4 }, -- Big Red Raygun
@@ -623,7 +632,7 @@ NS.SetMode = function( mode, noReset )
 	wipe( NS.modeFilters );
 	wipe( NS.modeFiltersFlyout );
 	-- filter: key(1), string(2), default(3), info(4)
-	-- modeFilters: qualities(1), categories(2), collected(3), petLevels(4), misc(5)
+	-- modeFilters: qualities(1), categories(2), collected(3), petLevels(4) or itemRequiresLevels(4), misc(5), craftedByProfession(6)
 	local poor = { ITEM_QUALITY0_DESC, ITEM_QUALITY_COLORS[0].hex .. ITEM_QUALITY0_DESC .. FONT_COLOR_CODE_CLOSE, true, 0 };
 	local common = { ITEM_QUALITY1_DESC, ITEM_QUALITY_COLORS[1].hex .. ITEM_QUALITY1_DESC .. FONT_COLOR_CODE_CLOSE, true, 1 };
 	local uncommon = { ITEM_QUALITY2_DESC, ITEM_QUALITY_COLORS[2].hex .. ITEM_QUALITY2_DESC .. FONT_COLOR_CODE_CLOSE, true, 2 };
@@ -633,6 +642,7 @@ NS.SetMode = function( mode, noReset )
 	local collected = { "collected", RED_FONT_COLOR_CODE .. L["Collected"] .. FONT_COLOR_CODE_CLOSE, false };
 	local requiresLevel = { "requiresLevel", RED_FONT_COLOR_CODE .. L["Requires Level"] .. FONT_COLOR_CODE_CLOSE, false };
 	local requiresProfession = { "requiresProfession", RED_FONT_COLOR_CODE .. L["Requires Profession"] .. FONT_COLOR_CODE_CLOSE, false };
+	local craftedByProfession = { "craftedByProfession", "|cffaf8356" .. L["Crafted by a Profession"] .. FONT_COLOR_CODE_CLOSE, true };
 	if NS.mode == "MOUNTS" then
 		NS.modeFilters = {
 			{ rare, epic },
@@ -643,6 +653,7 @@ NS.SetMode = function( mode, noReset )
 				requiresLevel, requiresProfession,
 				{ "requiresRidingSkill", RED_FONT_COLOR_CODE .. L["Requires Riding Skill"] .. FONT_COLOR_CODE_CLOSE, false },
 			},
+			{ craftedByProfession },
 		};
 		AuctionFrameCollectionShop_FlyoutPanel_ToggleCategories:Disable(); -- Mounts have no categories
 	elseif NS.mode == "PETS" then
@@ -671,6 +682,7 @@ NS.SetMode = function( mode, noReset )
 			{
 				{ "groupBySpecies", L["Group By Species"], true },
 			},
+			{ craftedByProfession },
 		};
 	elseif NS.mode == "TOYS" then
 		NS.modeFilters = {
@@ -695,6 +707,7 @@ NS.SetMode = function( mode, noReset )
 			{ notCollected, collected },
 			{},
 			{ requiresLevel, requiresProfession },
+			{ craftedByProfession },
 		};
 	elseif NS.mode == "APPEARANCES" then
 		NS.modeFilters = {
@@ -751,8 +764,18 @@ NS.SetMode = function( mode, noReset )
 				{ "collectedUnknownSources", NORMAL_FONT_COLOR_CODE .. L["Collected - Unknown Sources"] .. FONT_COLOR_CODE_CLOSE, false },
 				{ "collectedKnownSources", RED_FONT_COLOR_CODE .. L["Collected - Known Sources"] .. FONT_COLOR_CODE_CLOSE, false },
 			},
-			{},
+			{
+				{ "itemRequiresLevels1", L["Level 1-60"], true },		-- Classic
+				{ "itemRequiresLevels2", L["Level 61-70"], true },		-- TBC
+				{ "itemRequiresLevels3", L["Level 71-80"], true },		-- WotLK
+				{ "itemRequiresLevels4", L["Level 81-85"], true },		-- Cata
+				{ "itemRequiresLevels5", L["Level 86-90"], true },		-- MoP
+				{ "itemRequiresLevels6", L["Level 91-100"], true },		-- WoD
+				{ "itemRequiresLevels7", L["Level 101-110"], true },	-- Legion
+				{ "itemRequiresLevels8", L["Level 111-120"], true },	-- Battle
+			},
 			{ requiresLevel, requiresProfession },
+			{ craftedByProfession },
 		};
 	end
 	-- Combine Filters for Flyout
@@ -1322,6 +1345,7 @@ function NS.scan:Start( type )
 	AuctionFrameCollectionShop_BuyAllButton:Disable();
 	NS.disableFlyoutChecks = true;
 	AuctionFrameCollectionShop_FlyoutPanel_ScrollFrame:Update();
+	AuctionFrameCollectionShop_FlyoutPanel_NameSearchEditbox:Disable();
 	--
 	if type == "GETALL" then
 		NS.JumbotronFrame_Message( L["Scanning Auction House"] );
@@ -1339,6 +1363,11 @@ function NS.scan:Start( type )
 		NS.JumbotronFrame_Message( L["Shopping"] );
 		NS.StatusFrame_Message( "..." );
 		AuctionFrameCollectionShop_ShopButton:SetText( L["Abort"] );
+		-- ALL MODES: Name Search
+		local nameSearch = strtrim( AuctionFrameCollectionShop_FlyoutPanel_NameSearchEditbox:GetText() );
+		if nameSearch ~= "" then
+			self.query.name = string.lower( nameSearch );
+		end
 		-- ALL MODES: Qualities
 		for i = 1, #NS.modeFilters[1] do
 			if NS.db["modeFilters"][NS.mode][NS.modeFilters[1][i][1]] then
@@ -1617,7 +1646,12 @@ function NS.scan:QueryPageRetrieve()
 	local auctionBatchNum,auctionBatchRetry,maxItemPriceExceeded,NextAuction,PageComplete;
 	--
 	if self.type == "SHOP" then
-		NS.StatusFrame_Message( string.format( L["Scanning %s: Page %d of %d"], HIGHLIGHT_FONT_COLOR_CODE .. self.query.categoryName .. " > " .. self.query.subCategoryName .. FONT_COLOR_CODE_CLOSE, ( self.query.page + 1 ), self.query.totalPages ) );
+		local categoryDesc = HIGHLIGHT_FONT_COLOR_CODE .. self.query.categoryName .. " > " .. self.query.subCategoryName .. FONT_COLOR_CODE_CLOSE;
+		if self.query.totalPages == 0 then
+			NS.StatusFrame_Message( string.format( L["Scanning %s: No matches"], categoryDesc ) );
+		else
+			NS.StatusFrame_Message( string.format( L["Scanning %s: Page %d of %d"], categoryDesc, ( self.query.page + 1 ), self.query.totalPages ) );
+		end
 	end
 	--
 	NextAuction = function()
@@ -1882,8 +1916,10 @@ function NS.scan:ImportShopData()
 		if auctionNum <= #data[itemId] then
 			-- Filter: Quality
 			-- Option: Max Item Price
-			if self.query.qualities[data[itemId][auctionNum][4]] and ( NS.db["maxItemPriceCopper"][NS.mode] == 0 or data[itemId][auctionNum][1] <= NS.db["maxItemPriceCopper"][NS.mode] ) then
+			-- Filter: Name
+			if self.query.qualities[data[itemId][auctionNum][4]] and ( NS.db["maxItemPriceCopper"][NS.mode] == 0 or data[itemId][auctionNum][1] <= NS.db["maxItemPriceCopper"][NS.mode] ) and ( NS.db["live"] or self.query.name == "" or string.find( string.lower( string.match( data[itemId][auctionNum][2], "%[([^%[%]]+)%]" ) ), self.query.name, nil, true ) ) then
 				local discard;
+				--
 				if NS.mode == "MOUNTS" then
 					if NS.mountCollection[itemId] and ( ( NS.mountCollection[itemId] == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.mountCollection[itemId] > 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) ) then -- collected(3), Not Collected(1)/Collected(2), key(1)
 						discard = true;
@@ -1894,6 +1930,7 @@ function NS.scan:ImportShopData()
 						local _;
 						_,speciesID,petLevel = strsplit( ":", data[itemId][auctionNum][2] ); -- battlepet:0:speciesID:level:breedQuality:maxHealth:power:speed:customName
 						speciesID,petLevel = tonumber( speciesID ), tonumber( petLevel );
+
 					else
 						-- Companion Pet
 						speciesID,petLevel = NS.petInfo[itemId][1], 1;
@@ -1938,7 +1975,46 @@ function NS.scan:ImportShopData()
 					if NS.toyCollection[itemId] and ( ( NS.toyCollection[itemId] == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.toyCollection[itemId] > 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) ) then -- collected(3), Not Collected(1)/Collected(2), key(1)
 						discard = true;
 					end
+				elseif NS.mode == "APPEARANCES" then
+					-- Filter: itemRequiresLevels
+					if not discard then
+						local itemRequiresLevel = data[itemId][auctionNum][5]; -- requiresLevel(5)
+						--
+						if itemRequiresLevel <= 60 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][1][1]] then -- itemRequiresLevels(4), Level 1-60(1), key(1)
+							discard = true;
+						elseif itemRequiresLevel >= 61 and itemRequiresLevel <= 70 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][2][1]] then -- itemRequiresLevels(4), Level 61-70(2), key(1)
+							discard = true;
+						elseif itemRequiresLevel >= 71 and itemRequiresLevel <= 80 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][3][1]] then -- itemRequiresLevels(4), Level 71-80(3), key(1)
+							discard = true;
+						elseif itemRequiresLevel >= 81 and itemRequiresLevel <= 85 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][4][1]] then -- itemRequiresLevels(4), Level 81-85(4), key(1)
+							discard = true;
+						elseif itemRequiresLevel >= 86 and itemRequiresLevel <= 90 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][5][1]] then -- itemRequiresLevels(4), Level 86-90(5), key(1)
+							discard = true;
+						elseif itemRequiresLevel >= 91 and itemRequiresLevel <= 100 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][6][1]] then -- itemRequiresLevels(4), Level 91-100(6), key(1)
+							discard = true;
+						elseif itemRequiresLevel >= 101 and itemRequiresLevel <= 110 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][7][1]] then -- itemRequiresLevels(4), Level 101-110(7), key(1)
+							discard = true;
+						elseif itemRequiresLevel >= 111 and itemRequiresLevel <= 120 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][8][1]] then -- itemRequiresLevels(4), Level 111-120(8), key(1)
+							discard = true;
+						end
+					end
 				end
+				-- Filter: Crafted by a Profession
+				if not discard and not NS.db["modeFilters"][NS.mode][NS.modeFilters[6][1][1]] then -- craftedByProfession(6), key(1), key(1)
+					if NS.mode == "PETS" and itemId == 82800 then
+						for companionPetId, companionPetInfo in pairs( NS.petInfo ) do
+							if companionPetInfo[1] == speciesID then -- speciesID(1)
+								if NS.craftedItems[companionPetId] then
+									discard = true; -- Craftable Battle Pet? It is if it matches a craftable Companion Pet by speciesID
+								end
+								break;
+							end
+						end
+					elseif NS.craftedItems[itemId] then
+						discard = true;
+					end
+				end
+				--
 				if not discard and ( ( NS.mode == "PETS" or NS.db["modeFilters"][NS.mode][NS.modeFilters[5][1][1]] ) or data[itemId][auctionNum][5] <= NS.linkLevel ) then -- misc(5), Requires Level(1), key(1), requiresLevel(5)
 					if NS.mode == "APPEARANCES" then
 						appearanceID, sourceID = data[itemId][auctionNum][6], data[itemId][auctionNum][7]; -- appearanceID(6), sourceID(7)
@@ -2022,6 +2098,7 @@ function NS.scan:Complete( cancelMessage )
 				NS.AuctionSortButtons_Action( "Enable" );
 				NS.disableFlyoutChecks = false;
 				AuctionFrameCollectionShop_FlyoutPanel_ScrollFrame:Update();
+				AuctionFrameCollectionShop_FlyoutPanel_NameSearchEditbox:Enable();
 				AuctionFrameCollectionShop_LiveCheckButton:Enable();
 				AuctionFrameCollectionShop_ScanButton:Reset();
 				AuctionFrameCollectionShop_ShopButton:Reset();
@@ -2115,6 +2192,7 @@ function NS.scan:Complete( cancelMessage )
 	NS.AuctionSortButtons_Action( "Enable" );
 	NS.disableFlyoutChecks = false;
 	AuctionFrameCollectionShop_FlyoutPanel_ScrollFrame:Update();
+	AuctionFrameCollectionShop_FlyoutPanel_NameSearchEditbox:Enable();
 	AuctionFrameCollectionShop_LiveCheckButton:Enable();
 	AuctionFrameCollectionShop_ScanButton:Reset();
 	AuctionFrameCollectionShop_ShopButton:Reset();
@@ -2793,6 +2871,11 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 	NS.Button( "_BuyAllButton", AuctionFrameCollectionShop, L["Buy All"], {
 		size = { 80, 22 },
 		setPoint = { "RIGHT", "#sibling", "LEFT" },
+		tooltip = function()
+			if not NS.buyAll then
+				return L["Automatically selects the next (first) auction and\ncontinues to do so after every confirmed buyout."];
+			end
+		end,
 		OnClick = function( self )
 			if NS.buyAll then
 				NS.buyAll = false;
@@ -2818,6 +2901,8 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		size = { 80, 22 },
 		setPoint = { "RIGHT", "#sibling", "LEFT" },
 		OnClick = function( self )
+			AuctionFrameCollectionShop_FlyoutPanel_NameSearchEditbox:ClearFocus();
+			--
 			if NS.scan.status == "ready" or NS.scan.status == "selected" then
 				-- Shop
 				NS.Reset();
@@ -2948,6 +3033,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 					AuctionFrameCollectionShop_FlyoutPanel_ScrollFrame:SetVerticalScroll( 0 ); -- Scroll to top
 				end
 				AuctionFrameCollectionShop_FlyoutPanel_ScrollFrame:Update();
+				AuctionFrameCollectionShop_FlyoutPanel_NameSearchEditbox:Enable();
 				if NS.mode and NS.db["flyoutPanelOpen"] and not self:IsShown() then
 					self:Show();
 				elseif ( not NS.mode or not NS.db["flyoutPanelOpen"] ) and self:IsShown() then
@@ -2971,12 +3057,34 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 			self.FlyoutPanelButton:SetPushedTexture( "Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down" );
 		end,
 	} );
+	NS.InputBox( "_NameSearchEditbox", AuctionFrameCollectionShop_FlyoutPanel, {
+		template = "SearchBoxTemplate",
+		size = { 170, 20 },
+		setPoint = { "TOP", "$parent", "TOP", 0, -23 },
+		maxLetters = 50,
+		OnEnterPressed = function( self )
+			if self:GetText() == "" then
+				self:ClearFocus();
+			else
+				AuctionFrameCollectionShop_ShopButton:Click();
+			end
+		end,
+		OnEditFocusGained = function( self )
+			self:HighlightText();
+		end,
+		OnEditFocusLost = function( self )
+			self:HighlightText( 0, 0 );
+		end,
+		OnLoad = function( self )
+			self.Instructions:SetText( L["Item Name"] );
+		end,
+	} );
 	NS.ScrollFrame( "_ScrollFrame", AuctionFrameCollectionShop_FlyoutPanel, {
-		size = { 242, ( 20 * 17 - 5 ) },
-		setPoint = { "TOPLEFT", 1, -27 },
+		size = { 242, ( 20 * 16 - 5 ) },
+		setPoint = { "TOPLEFT", 1, -47 },
 		buttonTemplate = "AuctionFrameCollectionShop_FlyoutPanel_ScrollFrameButtonTemplate",
 		update = {
-			numToDisplay = 17,
+			numToDisplay = 16,
 			buttonHeight = 20,
 			UpdateFunction = function( sf )
 				local items = NS.modeFiltersFlyout;
