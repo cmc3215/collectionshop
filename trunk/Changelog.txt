@@ -1,6 +1,11 @@
+**2.09**
+
+- Release date: 07/05/2018
+- Bug fix: Toy box Shop resulted in Lua error.
+
 **2.08**
 
-- Release date: 07/04/2018
+- Release date: 07/05/2018
 - Added item name filter.
 - Added level filters to Appearances mode.
 - Added "Crafted by a Profession" filter.

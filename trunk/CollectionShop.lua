@@ -4,7 +4,7 @@
 local NS = select( 2, ... );
 local L = NS.localization;
 NS.releasePatch = "7.3.5";
-NS.versionString = "2.08";
+NS.versionString = "2.09";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -323,8 +323,8 @@ NS.petInfo = {
 NS.toyInfo = {
 	-- As of 07/04/2018
 	--[toyItemId] = { catNum, subCatNum }, -- itemName
-	[160740] = { 12, 6 }, -- Croak Crock
-	[160751] = { 12, 6 }, -- Dance of the Dead
+	[160740] = { 12, 4 }, -- Croak Crock
+	[160751] = { 12, 4 }, -- Dance of the Dead
 	[151652] = { 6, 1 }, -- Wormhole Generator: Argus
 	[144393] = { 12, 4 }, -- Portable Yak Wash
 	[142265] = { 12, 4 }, -- Big Red Raygun
