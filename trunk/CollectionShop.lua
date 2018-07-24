@@ -4,7 +4,7 @@
 local NS = select( 2, ... );
 local L = NS.localization;
 NS.releasePatch = "8.0.1";
-NS.versionString = "2.11";
+NS.versionString = "3.0";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -14,10 +14,10 @@ NS.realmName = GetRealmName();
 NS.playerLoginMsg = {};
 NS.AuctionFrameTab = nil;
 NS.scan = {};
-NS.modes = { "MOUNTS", "PETS", "TOYS", "APPEARANCES" };
-NS.modeNames = { "Mounts", "Pets", "Toys", "Appearances" };
-NS.modeNums = { [NS.modes[1]] = 1, [NS.modes[2]] = 2, [NS.modes[3]] = 3, [NS.modes[4]] = 4 };
-NS.modeColorCodes = { ITEM_QUALITY_COLORS[6].hex, ITEM_QUALITY_COLORS[5].hex, "|cff66bbff", "|c" .. TRANSMOGRIFY_FONT_COLOR:GenerateHexColor() };
+NS.modes = { "MOUNTS", "PETS", "TOYS", "APPEARANCES", "RECIPES" };
+NS.modeNames = { "Mounts", "Pets", "Toys", "Appearances", "Recipes" };
+NS.modeNums = { [NS.modes[1]] = 1, [NS.modes[2]] = 2, [NS.modes[3]] = 3, [NS.modes[4]] = 4, [NS.modes[5]] = 5 };
+NS.modeColorCodes = { ITEM_QUALITY_COLORS[6].hex, ITEM_QUALITY_COLORS[5].hex, "|cff66bbff", "|c" .. TRANSMOGRIFY_FONT_COLOR:GenerateHexColor(), "|c" .. RAID_CLASS_COLORS["MONK"].colorStr };
 NS.modeFilters = {};
 NS.modeFiltersFlyout = {};
 NS.mode = nil;
@@ -33,6 +33,7 @@ NS.appearanceCollection = {
 	sources = {},
 	getAllReady = false,
 };
+NS.recipeCollection = {};
 NS.shopAppearancesBy = nil; -- appearance, source
 --
 NS.auction = {
@@ -48,6 +49,7 @@ NS.auction = {
 };
 NS.linkLevel = nil;
 NS.linkSpecID = nil;
+NS.playerProfessions = {};
 NS.numAuctionsWon = 0;
 NS.copperAuctionsWon = 0;
 NS.auctionsWon = {};
@@ -80,13 +82,189 @@ NS.invTypeToSlotId = {
 	['INVTYPE_SHIELD'] = 17,
     ['INVTYPE_HOLDABLE'] = 17,
 };
-NS.craftingProfessions = { 2259,2018,7411,4036,45357,25229,2108,3908 };
+NS.craftingProfessions = { 2259,2018,7411,4036,45357,25229,2108,3908,2550 }; -- Spells: Alchemy, Blacksmithing, Enchanting, Engineering, Inscription, Jewelcrafting, Leatherworking, Tailoring, Cooking
 for i = 1, #NS.craftingProfessions do
-	NS.craftingProfessions[i] = GetSpellInfo( NS.craftingProfessions[i] );
+	local spellName = GetSpellInfo( NS.craftingProfessions[i] );
+	if spellName then
+		NS.craftingProfessions[i] = spellName;
+	else
+		NS.Print( string.format( L["%d : Missing crafting profession spell."], NS.craftingProfessions[i] ) );
+	end
 end
-NS.ridingSpells = { 90265,34091,34090,33391,33388 };
+NS.skills = {
+	--
+	-- Recipes may be associated with any of these skill ids, but this list associates the specific skill id back to its base skill id.
+	-- http://www.wowhead.com/skills
+	--
+	-- name[baseSkillID] = baseSkillName
+	--
+	name = {
+		[171] = NS.craftingProfessions[1], -- Alchemy
+		[164] = NS.craftingProfessions[2], -- Blacksmithing
+		[333] = NS.craftingProfessions[3], -- Enchanting
+		[202] = NS.craftingProfessions[4], -- Engineering
+		[773] = NS.craftingProfessions[5], -- Inscription
+		[755] = NS.craftingProfessions[6], -- Jewelcrafting
+		[165] = NS.craftingProfessions[7], -- Leatherworking
+		[197] = NS.craftingProfessions[8], -- Tailoring
+		[185] = NS.craftingProfessions[9], -- Cooking
+	},
+	--
+	-- [specificSkillID] = baseSkillID
+	-- [baseSkillName] = baseSkillID
+	--
+	-- Alchemy
+	[NS.craftingProfessions[1]] = 171, -- Alchemy
+	[171] = 171, -- Alchemy
+	[2485] = 171, -- Alchemy
+	[2484] = 171, -- Outland Alchemy
+	[2483] = 171, -- Northrend Alchemy
+	[2482] = 171, -- Cataclysm Alchemy
+	[2481] = 171, -- Pandaria Alchemy
+	[2480] = 171, -- Draenor Alchemy
+	[2479] = 171, -- Legion Alchemy
+	[2478] = 171, -- Kul Tiran Alchemy
+	-- Blacksmithing
+	[NS.craftingProfessions[2]] = 164, -- Blacksmithing
+	[164] = 164, -- Blacksmithing
+	[2477] = 164, -- Blacksmithing
+	[2476] = 164, -- Outland Blacksmithing
+	[2475] = 164, -- Northrend Blacksmithing
+	[2474] = 164, -- Cataclysm Blacksmithing
+	[2473] = 164, -- Pandaria Blacksmithing
+	[2472] = 164, -- Draenor Blacksmithing
+	[2454] = 164, -- Legion Blacksmithing
+	[2437] = 164, -- Kul Tiran Blacksmithing
+	-- Enchanting
+	[NS.craftingProfessions[3]] = 333, -- Enchanting
+	[333] = 333, -- Enchanting
+	[2494] = 333, -- Enchanting
+	[2488] = 333, -- Draenor Enchanting
+	[2493] = 333, -- Outland Enchanting
+	[2492] = 333, -- Northrend Enchanting
+	[2491] = 333, -- Cataclysm Enchanting
+	[2489] = 333, -- Pandaria Enchanting
+	[2487] = 333, -- Legion Enchanting
+	[2486] = 333, -- Kul Tiran Enchanting
+	-- Engineering
+	[NS.craftingProfessions[4]] = 202, -- Engineering
+	[202] = 202, -- Engineering
+	[2506] = 202, -- Engineering
+	[2505] = 202, -- Outland Engineering
+	[2504] = 202, -- Northrend Engineering
+	[2503] = 202, -- Cataclysm Engineering
+	[2502] = 202, -- Pandaria Engineering
+	[2501] = 202, -- Draenor Engineering
+	[2500] = 202, -- Legion Engineering
+	[2499] = 202, -- Kul Tiran Engineering
+	-- Inscription
+	[NS.craftingProfessions[5]] = 773, -- Inscription
+	[773] = 773, -- Inscription
+	[2514] = 773, -- Inscription
+	[2513] = 773, -- Outland Inscription
+	[2512] = 773, -- Northrend Inscription
+	[2511] = 773, -- Cataclysm Inscription
+	[2510] = 773, -- Pandaria Inscription
+	[2509] = 773, -- Draenor Inscription
+	[2508] = 773, -- Legion Inscription
+	[2507] = 773, -- Kul Tiran Inscription
+	-- Jewelcrafting
+	[NS.craftingProfessions[6]] = 755, -- Jewelcrafting
+	[755] = 755, -- Jewelcrafting
+	[2524] = 755, -- Jewelcrafting
+	[2523] = 755, -- Outland Jewelcrafting
+	[2522] = 755, -- Northrend Jewelcrafting
+	[2521] = 755, -- Cataclysm Jewelcrafting
+	[2520] = 755, -- Pandaria Jewelcrafting
+	[2519] = 755, -- Draenor Jewelcrafting
+	[2518] = 755, -- Legion Jewelcrafting
+	[2517] = 755, -- Kul Tiran Jewelcrafting
+	-- Leatherworking
+	[NS.craftingProfessions[7]] = 165, -- Leatherworking
+	[165] = 165, -- Leatherworking
+	[2532] = 165, -- Leatherworking
+	[2531] = 165, -- Outland Leatherworking
+	[2530] = 165, -- Northrend Leatherworking
+	[2529] = 165, -- Cataclysm Leatherworking
+	[2528] = 165, -- Pandaria Leatherworking
+	[2527] = 165, -- Draenor Leatherworking
+	[2526] = 165, -- Legion Leatherworking
+	[2525] = 165, -- Kul Tiran Leatherworking
+	-- Tailoring
+	[NS.craftingProfessions[8]] = 197, -- Tailoring
+	[197] = 197, -- Tailoring
+	[2540] = 197, -- Tailoring
+	[2539] = 197, -- Outland Tailoring
+	[2538] = 197, -- Northrend Tailoring
+	[2537] = 197, -- Cataclysm Tailoring
+	[2536] = 197, -- Pandaria Tailoring
+	[2535] = 197, -- Draenor Tailoring
+	[2534] = 197, -- Legion Tailoring
+	[2533] = 197, -- Kul Tiran Tailoring
+	-- Cooking
+	[NS.craftingProfessions[9]] = 185, -- Cooking
+	[185] = 185, -- Cooking
+	[2548] = 185, -- Cooking
+	[981] = 185, -- Apprentice Cooking
+	[982] = 185, -- Journeyman Cookbook
+	[2547] = 185, -- Outland Cooking
+	[2546] = 185, -- Northrend Cooking
+	[2545] = 185, -- Cataclysm Cooking
+	[2544] = 185, -- Pandaria Cooking
+	[2542] = 185, -- Legion Cooking
+	[2543] = 185, -- Draenor Cooking
+	[2541] = 185, -- Kul Tiran Cooking
+	-- Archaeology
+	-- [794] = 794, -- Archaeology
+	-- Fishing
+	-- [356] = 356, -- Fishing
+	-- [2592] = 356, -- Fishing
+	-- [2591] = 356, -- Outland Fishing
+	-- [2590] = 356, -- Northrend Fishing
+	-- [2589] = 356, -- Cataclysm Fishing
+	-- [2588] = 356, -- Pandaria Fishing
+	-- [2587] = 356, -- Draenor Fishing
+	-- [2586] = 356, -- Legion Fishing
+	-- [2585] = 356, -- Kul Tiran Fishing
+	-- Herbalism
+	-- [182] = 182, -- Herbalism
+	-- [2556] = 182, -- Herbalism
+	-- [2555] = 182, -- Outland Herbalism
+	-- [2554] = 182, -- Northrend Herbalism
+	-- [2553] = 182, -- Cataclysm Herbalism
+	-- [2552] = 182, -- Pandaria Herbalism
+	-- [2551] = 182, -- Draenor Herbalism
+	-- [2550] = 182, -- Legion Herbalism
+	-- [2549] = 182, -- Kul Tiran Herbalism
+	-- Mining
+	-- [186] = 186, -- Mining
+	-- [2572] = 186, -- Mining
+	-- [2571] = 186, -- Outland Mining
+	-- [2570] = 186, -- Northrend Mining
+	-- [2569] = 186, -- Cataclysm Mining
+	-- [2568] = 186, -- Pandaria Mining
+	-- [2567] = 186, -- Draenor Mining
+	-- [2566] = 186, -- Legion Mining
+	-- [2565] = 186, -- Kul Tiran Mining
+	-- Skinning
+	-- [393] = 393, -- Skinning
+	-- [2564] = 393, -- Skinning
+	-- [2563] = 393, -- Outland Skinning
+	-- [2562] = 393, -- Northrend Skinning
+	-- [2560] = 393, -- Pandaria Skinning
+	-- [2561] = 393, -- Cataclysm Skinning
+	-- [2559] = 393, -- Draenor Skinning
+	-- [2558] = 393, -- Legion Skinning
+	-- [2557] = 393, -- Kul Tiran Skinning
+};
+NS.ridingSpells = { 90265,34091,34090,33391,33388 }; -- Spells: Master Riding, Artisan Riding, Expert Riding, Journeyman Riding, Apprentice Riding
 for i = 1, #NS.ridingSpells do
-	NS.ridingSpells[i] = GetSpellInfo( NS.ridingSpells[i] );
+	local spellName = GetSpellInfo( NS.ridingSpells[i] );
+	if spellName then
+		NS.ridingSpells[i] = spellName;
+	else
+		NS.Print( string.format( L["%d : Missing riding spell."], NS.ridingSpells[i] ) );
+	end
 end
 NS.cachedDressUpIds = {};
 NS.mountInfo = {
@@ -395,6 +573,7 @@ NS.mountItemIds = {};
 NS.petItemIds = { 82800 };
 NS.toyItemIds = {};
 NS.appearanceItemIds = {};
+NS.recipeItemIds = {};
 for k, v in pairs( NS.mountInfo ) do
 	NS.mountItemIds[#NS.mountItemIds + 1] = k;
 end
@@ -403,6 +582,9 @@ for k, v in pairs( NS.petInfo ) do
 end
 for k, v in pairs( NS.toyInfo ) do
 	NS.toyItemIds[#NS.toyItemIds + 1] = k;
+end
+for k, v in pairs( NS.recipeInfo ) do
+	NS.recipeItemIds[#NS.recipeItemIds + 1] = k;
 end
 NS.TRANSMOGRIFY_FONT_COLOR_CODE = "|c" .. TRANSMOGRIFY_FONT_COLOR:GenerateHexColor();
 if not ITEM_QUALITY_COLORS[-1] then
@@ -433,9 +615,9 @@ NS.DefaultSavedVariables = function()
 		["undressCharacter"] = true,
 		["live"] = false,
 		["auctionsWonReminder"] = true,
-		["maxItemPriceCopper"] = { [NS.modes[1]] = 0, [NS.modes[2]] = 0, [NS.modes[3]] = 0, [NS.modes[4]] = 0 },
+		["maxItemPriceCopper"] = { [NS.modes[1]] = 0, [NS.modes[2]] = 0, [NS.modes[3]] = 0, [NS.modes[4]] = 0, [NS.modes[5]] = 0 },
 		["tsmItemValueSource"] = "",
-		["modeFilters"] = { [NS.modes[1]] = {}, [NS.modes[2]] = {}, [NS.modes[3]] = {}, [NS.modes[4]] = {} },
+		["modeFilters"] = { [NS.modes[1]] = {}, [NS.modes[2]] = {}, [NS.modes[3]] = {}, [NS.modes[4]] = {}, [NS.modes[5]] = {} },
 		["autoselectAfterAuctionUnavailable"] = true,
 	};
 end
@@ -460,6 +642,13 @@ NS.Upgrade = function()
 	-- 2.07
 	if version < 2.07 then
 		NS.db["autoselectAfterAuctionUnavailable"] = vars["autoselectAfterAuctionUnavailable"]; -- New db variable
+	end
+	-- 3.0
+	if version < 3.0 then
+		wipe( NS.db["getAllScan"] ); -- New itemType "recipe"
+		-- New mode settings, RECIPES (5)
+		NS.db["maxItemPriceCopper"][NS.modes[5]] = 0;
+		NS.db["modeFilters"][NS.modes[5]] = {};
 	end
 	--
 	NS.db["version"] = NS.version;
@@ -541,6 +730,7 @@ NS.Reset = function( filterOnClick )
 		wipe( NS.mountCollection );
 		wipe( NS.petCollection );
 		wipe( NS.toyCollection );
+		wipe( NS.recipeCollection );
 		if NS.options.MainFrame:IsShown() then
 			NS.options.MainFrame:Hide(); -- Close options frame, prevents errors on Buyouts tab
 		end
@@ -551,7 +741,7 @@ NS.Reset = function( filterOnClick )
 	else
 		AuctionFrameCollectionShop_MaxItemPriceFrame:Hide();
 	end
-	if NS.mode == "APPEARANCES" then -- Undress Character
+	if NS.mode == "APPEARANCES" or NS.mode == "RECIPES" then -- Undress Character
 		AuctionFrameCollectionShop_UndressCharacterCheckButton:SetChecked( NS.db["undressCharacter"] );
 		AuctionFrameCollectionShop_UndressCharacterCheckButton:Show();
 	else
@@ -650,7 +840,8 @@ NS.SetMode = function( mode, noReset )
 			{ notCollected, collected },
 			{},
 			{
-				requiresLevel, requiresProfession,
+				requiresLevel,
+				requiresProfession,
 				{ "requiresRidingSkill", RED_FONT_COLOR_CODE .. L["Requires Riding Skill"] .. FONT_COLOR_CODE_CLOSE, false },
 			},
 			{ craftedByProfession },
@@ -714,14 +905,14 @@ NS.SetMode = function( mode, noReset )
 			{ uncommon, rare, epic },
 			( function()
 				local auctionCategoryIndexes = {};
-				-- Weapons - One-Handed, Two-Handed, Ranged
+				-- Weapons: One-Handed, Two-Handed, Ranged
 				for i = 1, 3 do
 					for x = 1, #AuctionCategories[1].subCategories[i].subCategories do
 						auctionCategoryIndexes[AuctionCategories[1].subCategories[i].subCategories[x].name] = { 1, i, x };
 					end
 				end
-				-- Armor - Plate, Mail, Leather, Cloth
-				local classArmorIndexes = { -- 1 = Plate, 2 = Mail, 3 = Leather, 4 = Cloth
+				-- Armor: Plate, Mail, Leather, Cloth ------ 1 = Plate, 2 = Mail, 3 = Leather, 4 = Cloth
+				local classArmorIndexes = {
 					["WARRIOR"] = 1,
 					["DEATHKNIGHT"] = 1,
 					["PALADIN"] = 1,
@@ -743,7 +934,7 @@ NS.SetMode = function( mode, noReset )
 						end
 					end
 				end
-				-- Armor - Miscellaneous - Cloak, Held In Off-hand, Shields, Shirt
+				-- Armor: Miscellaneous -> Cloak, Held In Off-hand, Shields, Shirt
 				auctionCategoryIndexes[BACKSLOT] = { 2, 5, 2 }; -- Appearances calls this "Back" - AuctionCategories[2].subCategories[5].subCategories[2].name
 				auctionCategoryIndexes[AuctionCategories[2].subCategories[5].subCategories[5].name] = { 2, 5, 5 };
 				auctionCategoryIndexes[AuctionCategories[2].subCategories[5].subCategories[6].name] = { 2, 5, 6 };
@@ -774,9 +965,48 @@ NS.SetMode = function( mode, noReset )
 				{ "itemRequiresLevels7", L["Level 101-110"], true },	-- Legion
 				{ "itemRequiresLevels8", L["Level 111-120"], true },	-- Battle
 			},
-			{ requiresLevel, requiresProfession },
+			{
+				requiresLevel,
+				requiresProfession,
+				{ "nonsetItems", L["Non-set Items"], true },
+			},
 			{ craftedByProfession },
 		};
+	elseif NS.mode == "RECIPES" then
+		-- Record Player Professions
+		wipe( NS.playerProfessions );
+		local prof1, prof2, archaeology, fishing, cooking = GetProfessions();
+		local professions = { prof1, prof2, cooking };
+		for i = 1, 3 do
+			if professions[i] then -- nil if player doesn't have cooking or both primary professions
+				local _,_,skillLevel,_,_,_,skillLine = GetProfessionInfo( professions[i] ); -- returns base skill id rather than expac specific
+				NS.playerProfessions[skillLine] = skillLevel; -- skillLevel not used since professions were splintered into expacs in BfA
+			end
+		end
+		--
+		NS.modeFilters = {
+			{ common, uncommon, rare, epic },
+			( function()
+				local categories,categoryName,skillLine = {};
+				for i = 1, #AuctionCategories[9].subCategories do
+					categoryName = AuctionCategories[9].subCategories[i].name;
+					skillLine = NS.skills[categoryName]; -- This will exclude the last three auction categories: First Aid, Fishing, and Book
+					if skillLine and NS.playerProfessions[skillLine] then -- Only include profession categories the player has learned
+						categories[#categories + 1] = { categoryName, categoryName, true, i }; -- Profession name and auction subcategory index
+					end
+				end
+				return categories;
+			end )(),
+			{ notCollected, collected },
+			{},
+			{
+				requiresLevel,
+				requiresProfession,
+			},
+			{ craftedByProfession },
+		};
+		-- Modify misc(5) requiresProfession(2) string(2) because recipes will only show up for learned professions anyways
+		NS.modeFilters[5][2][2] = RED_FONT_COLOR_CODE .. L["Requires Profession Level"] .. FONT_COLOR_CODE_CLOSE;
 	end
 	-- Combine Filters for Flyout
 	for i = 1, #NS.modeFilters do
@@ -800,6 +1030,8 @@ NS.SetMode = function( mode, noReset )
 		else
 			NS.Reset();
 		end
+	elseif NS.mode == "PETS" then -- petCollection updated during ImportShopData
+		NS.Reset();
 	elseif NS.mode == "TOYS" then
 		if not next( NS.toyCollection ) then
 			NS.UpdateToyCollection();
@@ -808,7 +1040,13 @@ NS.SetMode = function( mode, noReset )
 		end
 	elseif NS.mode == "APPEARANCES" then -- appearanceCollection is updated just before ImportShopData
 		NS.Reset();
-	elseif ( not NS.mode and not noReset ) or NS.mode == "PETS" then -- petCollection updated during ImportShopData
+	elseif NS.mode == "RECIPES" then
+		if not next( NS.recipeCollection ) then
+			NS.UpdateRecipeCollection();
+		else
+			NS.Reset();
+		end
+	elseif not NS.mode and not noReset then
 		NS.Reset();
 	end
 end
@@ -1023,7 +1261,7 @@ NS.AuctionGroup_Deselect = function()
 	NS.scan.status = "ready";
 	wipe( NS.scan.query.auction );
 	AuctionFrameCollectionShop_ScrollFrame:Update();
-	if NS.mode == "MOUNTS" or NS.mode == "PETS" or NS.mode == "APPEARANCES" then
+	if NS.mode == "MOUNTS" or NS.mode == "PETS" or NS.mode == "APPEARANCES" or NS.mode == "RECIPES" then
 		HideUIPanel( SideDressUpFrame );
 		AuctionFrameCollectionShop_FlyoutPanel:Reset();
 	end
@@ -1151,11 +1389,13 @@ NS.AuctionDataGroups_UpdateGroup = function( groupKey )
 		NS.auction.data.groups[groupKey][5][1][2] = NS.NormalizeItemLink( NS.auction.data.groups[groupKey][5][1][2] );
 	end
 	-- Update Group
-	local itemValue = NS.isPctItemValue and ( NS.tsmPriceSources[NS.db["tsmItemValueSource"]] and ( TSMAPI_FOUR and TSMAPI_FOUR.CustomPrice.GetItemPrice( NS.auction.data.groups[groupKey][5][1][2], NS.db["tsmItemValueSource"] ) or TSMAPI:GetItemValue( NS.auction.data.groups[groupKey][5][1][2], NS.db["tsmItemValueSource"] ) ) or ( TSMAPI_FOUR and TSMAPI_FOUR.CustomPrice.GetValue( NS.db["tsmItemValueSource"], NS.auction.data.groups[groupKey][5][1][2] ) or TSMAPI:GetCustomPriceValue( NS.db["tsmItemValueSource"], NS.auction.data.groups[groupKey][5][1][2] ) ) ) or nil;
+	local itemValue = NS.isPctItemValue and ( NS.tsmPriceSources[NS.db["tsmItemValueSource"]] and ( TSMAPI_FOUR and TSMAPI_FOUR.CustomPrice.GetItemPrice( NS.auction.data.groups[groupKey][5][1][2], NS.db["tsmItemValueSource"] ) or TSMAPI:GetItemValue( NS.auction.data.groups[groupKey][5][1][2], NS.db["tsmItemValueSource"] ) ) or
+	--[[continued]]( TSMAPI_FOUR and TSMAPI_FOUR.CustomPrice.GetValue( NS.db["tsmItemValueSource"], NS.auction.data.groups[groupKey][5][1][2] ) or TSMAPI:GetCustomPriceValue( NS.db["tsmItemValueSource"], NS.auction.data.groups[groupKey][5][1][2] ) ) ) or nil;
 	NS.auction.data.groups[groupKey][2] = string.match( NS.auction.data.groups[groupKey][5][1][2], "%|h%[(.+)%]%|h" ); -- group name(2) copied from auctions(5), then first auction(1), get name via itemLink(2)
 	NS.auction.data.groups[groupKey][4] = NS.auction.data.groups[groupKey][5][1][1]; -- group itemPrice(4) copied from auctions(5), then first auction(1), then itemPrice(1)
-	NS.auction.data.groups[groupKey][6] = NS.mode == "PETS" and NS.auction.data.groups[groupKey][5][1][9] or NS.auction.data.groups[groupKey][5][1][5]; -- group lvl(6) copied from auctions(5), then first auction(1), then lvl(9) or requiresLevel(5)
+	NS.auction.data.groups[groupKey][6] = ( NS.mode == "PETS" or NS.mode == "RECIPES" ) and NS.auction.data.groups[groupKey][5][1][9] or NS.auction.data.groups[groupKey][5][1][5]; -- group lvl(6) copied from auctions(5), then first auction(1), then lvl(9) or requiresLevel(5)
 	NS.auction.data.groups[groupKey][7] = ( not itemValue or itemValue == 0 ) and 123456789 or ( ( NS.auction.data.groups[groupKey][4] * 100 ) / itemValue ); -- pctItemValue(7)
+	--NS.auction.data.groups[groupKey][8] -- RESERVED for recipe - requiresProfession(Level)
 end
 --
 NS.AuctionDataGroups_Filter = function( groupKey, FilterFunction, OnGroupsComplete, filterNotMatch, filter )
@@ -1377,8 +1617,12 @@ function NS.scan:Start( type )
 		if not next( self.query.qualities ) then
 			return self:Complete( RED_FONT_COLOR_CODE .. L["You must check at least one rarity filter"] .. FONT_COLOR_CODE_CLOSE );
 		end
+		-- RECIPES: Player Professions Check
+		if NS.mode == "RECIPES" and not next( NS.playerProfessions ) then
+			return self:Complete( RED_FONT_COLOR_CODE .. L["You must have a primary profession or Cooking"] .. FONT_COLOR_CODE_CLOSE );
+		end
 		-- MOST MODES: Categories Filter Check
-		if NS.mode == "PETS" or NS.mode == "TOYS" or NS.mode == "APPEARANCES" then
+		if NS.mode == "PETS" or NS.mode == "TOYS" or NS.mode == "APPEARANCES" or NS.mode == "RECIPES" then
 			local categoriesFilterCheck = false;
 			for i = 1, #NS.modeFilters[2] do
 				if NS.db["modeFilters"][NS.mode][NS.modeFilters[2][i][1]] and not ( NS.mode == "PETS" and i == #NS.modeFilters[2] ) then -- Companion Pets doesn't count, not a Pet Family
@@ -1387,7 +1631,7 @@ function NS.scan:Start( type )
 				end
 			end
 			if not categoriesFilterCheck then
-				return self:Complete( RED_FONT_COLOR_CODE .. string.format( L["You must check at least one %s filter"], ( NS.mode == "PETS" and L["Pet Family"] ) or ( NS.mode == "TOYS" and L["Auction Category"] ) or ( NS.mode == "APPEARANCES" and L["Appearance Category"] ) ) .. FONT_COLOR_CODE_CLOSE );
+				return self:Complete( RED_FONT_COLOR_CODE .. string.format( L["You must check at least one %s filter"], ( NS.mode == "PETS" and L["Pet Family"] ) or ( NS.mode == "TOYS" and L["Auction Category"] ) or ( NS.mode == "APPEARANCES" and L["Appearance Category"] ) or ( NS.mode == "RECIPES" and L["Recipe Category"] ) ) .. FONT_COLOR_CODE_CLOSE );
 			end
 		end
 		-- ALL MODES: Collected Filter Check
@@ -1447,6 +1691,7 @@ function NS.scan:Start( type )
 		elseif NS.mode == "TOYS" then
 			if NS.db["live"] then
 				for i = 1, #NS.modeFilters[2] do
+					-- Auction Categories
 					if NS.db["modeFilters"][NS.mode][NS.modeFilters[2][i][1]] then
 						local cat,subcat = unpack( NS.modeFilters[2][i][4] );
 						table.insert( self.query.queue, function()
@@ -1467,6 +1712,7 @@ function NS.scan:Start( type )
 			NS.shopAppearancesBy = ( NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] or NS.db["modeFilters"][NS.mode][NS.modeFilters[3][3][1]] ) and "source" or "appearance";
 			if NS.db["live"] then
 				for i = 1, #NS.modeFilters[2] do
+					-- Auction Categories
 					if NS.db["modeFilters"][NS.mode][NS.modeFilters[2][i][1]] then
 						local cat,subcat1,subcat2 = unpack( NS.modeFilters[2][i][4] );
 						table.insert( self.query.queue, function()
@@ -1485,6 +1731,26 @@ function NS.scan:Start( type )
 				else
 					self:ImportShopData();
 				end
+			end
+		elseif NS.mode == "RECIPES" then
+			if NS.db["live"] then
+				for i = 1, #NS.modeFilters[2] do
+					-- Auction Categories
+					if NS.db["modeFilters"][NS.mode][NS.modeFilters[2][i][1]] then
+						local subcat = NS.modeFilters[2][i][4];
+						table.insert( self.query.queue, function()
+							self.query.filterData = AuctionCategories[9].subCategories[subcat].filters; -- Recipes => Profession
+							self.query.categoryName = AuctionCategories[9].name; -- Recipes
+							self.query.subCategoryName = AuctionCategories[9].subCategories[subcat].name; -- Profession
+						end );
+					end
+				end
+				--
+				self.query.remaining = #self.query.queue;
+				self.query.queue[1]();
+				self:QueryPageSend();
+			else
+				self:ImportShopData();
 			end
 		end
 	end
@@ -1574,6 +1840,8 @@ function NS.scan:AuctionItemType( itemId )
 		return "pet";
 	elseif NS.toyInfo[itemId] then
 		return "toy";
+	elseif NS.recipeInfo[itemId] then
+		return "recipe";
 	else
 		local _,_,_,invType = GetItemInfoInstant( itemId );
 		if invType and NS.invTypeToSlotId[invType] then
@@ -1627,7 +1895,7 @@ function NS.scan:GetAuctionItemInfo( index )
 					itemLink,
 					texture,
 					quality,
-					( levelColHeader == "REQ_LEVEL_ABBR" and level or 1 ), -- requiresLevel
+					( levelColHeader == "REQ_LEVEL_ABBR" and level or ( auctionItemType == "recipe" and NS.recipeInfo[itemId][3] > 1 and NS.recipeInfo[itemId] ) or 1 ), -- requiresLevel -- requiredLevel(3)
 					appearanceID,
 					sourceID,
 				};
@@ -1825,6 +2093,9 @@ function NS.scan:UpdateAppearanceCollection()
 					if categoryID ~= 6 then -- Exclude TABARDSLOT
 						-- Appearance
 						if not NS.appearanceCollection.appearances[appearanceID] then
+							local sets = C_TransmogSets.GetSetsContainingSourceID( sourceID );
+							local belongsToSet = #sets > 0;
+							--
 							local appearanceCollected = sourceCollected;
 							if not sourceCollected then
 								local sources = C_TransmogCollection.GetAllAppearanceSources( appearanceID );
@@ -1838,7 +2109,7 @@ function NS.scan:UpdateAppearanceCollection()
 									end
 								end
 							end
-							NS.appearanceCollection.appearances[appearanceID] = { nil, appearanceCollected }; -- nil was categoryID but is not currently being used
+							NS.appearanceCollection.appearances[appearanceID] = { belongsToSet, appearanceCollected };
 						end
 						-- Source
 						NS.appearanceCollection.sources[sourceID] = { appearanceID, sourceCollected };
@@ -1869,13 +2140,14 @@ end
 --
 function NS.scan:ImportShopData()
 	local data = NS.db["live"] and NS.auction.data.live.itemIds or NS.db["getAllScan"][NS.realmName]["data"]["itemIds"];
-	local itemIds = ( NS.mode == "MOUNTS" and NS.mountItemIds ) or ( NS.mode == "PETS" and NS.petItemIds ) or ( NS.mode == "TOYS" and NS.toyItemIds ) or ( NS.mode == "APPEARANCES" and NS.appearanceItemIds );
+	local itemIds = ( NS.mode == "MOUNTS" and NS.mountItemIds ) or ( NS.mode == "PETS" and NS.petItemIds ) or ( NS.mode == "TOYS" and NS.toyItemIds ) or ( NS.mode == "APPEARANCES" and NS.appearanceItemIds ) or ( NS.mode == "RECIPES" and NS.recipeItemIds );
 	--
-	local itemNum,itemId,category,speciesID,appearanceID,petLevel,sourceID,auctionNum,auctionBatchNum,auctionBatchSize,getAppearanceAttempts,getAppearanceAttemptsMax,NextItem,NextAuction,AdvanceBatch,AddToGroup,GetAppearance;
+	local itemNum,itemId,category,speciesID,appearanceID,petLevel,sourceID,skillLevel,auctionNum,auctionBatchNum,auctionBatchSize,getAppearanceAttempts,getAppearanceAttemptsMax,NextItem,NextAuction,AdvanceBatch,AddToGroup,GetAppearance;
 	--
 	AddToGroup = function()
 		if self.status ~= "scanning" then return end
-		local groupId = ( NS.mode == "MOUNTS" and itemId ) or ( NS.mode == "PETS" and ( ( NS.db["modeFilters"][NS.mode][NS.modeFilters[5][1][1]] and speciesID ) or ( itemId == 82800 and data[itemId][auctionNum][2] ) or itemId ) ) or ( NS.mode == "TOYS" and itemId ) or ( NS.mode == "APPEARANCES" and ( NS.shopAppearancesBy == "appearance" and appearanceID or sourceID ) ); -- 82800 is Pet Cage for Battle Pets, misc(5), Group By Species(1), key(1), itemLink(2)
+		local groupId = ( NS.mode == "MOUNTS" and itemId ) or ( NS.mode == "PETS" and ( ( NS.db["modeFilters"][NS.mode][NS.modeFilters[5][1][1]] and speciesID ) or ( itemId == 82800 and data[itemId][auctionNum][2] ) or itemId ) ) or
+		--[[continued]]( NS.mode == "TOYS" and itemId ) or ( NS.mode == "APPEARANCES" and ( NS.shopAppearancesBy == "appearance" and appearanceID or sourceID ) ) or ( NS.mode == "RECIPES" and itemId ); -- 82800 is Pet Cage for Battle Pets, misc(5), Group By Species(1), key(1), itemLink(2)
 		local groupKey = NS.AuctionDataGroups_FindGroupKey( groupId );
 		if not groupKey then
 			groupKey = #NS.auction.data.groups + 1;
@@ -1887,6 +2159,7 @@ function NS.scan:ImportShopData()
 				{},				-- [5] auctions
 				0,				-- [6] lvl
 				0,				-- [7] pctItemValue
+				false,			-- [8] recipe - requiresProfession(Level) <<< SET AFTERWARDS WHEN NECESSARY IN FILTER GROUPS >>>
 			};
 		end
 		-- Add data to auction data groups
@@ -1894,7 +2167,7 @@ function NS.scan:ImportShopData()
 		NS.auction.data.groups[groupKey][5][#NS.auction.data.groups[groupKey][5]][6] = itemId; -- Add itemId(6) to auction
 		NS.auction.data.groups[groupKey][5][#NS.auction.data.groups[groupKey][5]][7] = category; -- Add category(7) to auction
 		NS.auction.data.groups[groupKey][5][#NS.auction.data.groups[groupKey][5]][8] = ( NS.mode == "PETS" and speciesID ) or ( NS.mode == "APPEARANCES" and appearanceID ) or nil; -- Add speciesID(8) or appearanceID(8) to auction
-		NS.auction.data.groups[groupKey][5][#NS.auction.data.groups[groupKey][5]][9] = ( NS.mode == "PETS" and petLevel ) or ( NS.mode == "APPEARANCES" and sourceID ) or nil; -- Add petLevel(9) or sourceID(9) to auction
+		NS.auction.data.groups[groupKey][5][#NS.auction.data.groups[groupKey][5]][9] = ( NS.mode == "PETS" and petLevel ) or ( NS.mode == "APPEARANCES" and sourceID ) or ( NS.mode == "RECIPES" and skillLevel ) or nil; -- Add petLevel(9) or sourceID(9) or skillLevel(9) to auction
 		return AdvanceBatch();
 	end
 	--
@@ -1914,23 +2187,33 @@ function NS.scan:ImportShopData()
 		if self.status ~= "scanning" then return end
 		--
 		if auctionNum <= #data[itemId] then
+			local discard;
 			-- Filter: Quality
 			-- Option: Max Item Price
 			-- Filter: Name
-			if self.query.qualities[data[itemId][auctionNum][4]] and ( NS.db["maxItemPriceCopper"][NS.mode] == 0 or data[itemId][auctionNum][1] <= NS.db["maxItemPriceCopper"][NS.mode] ) and ( NS.db["live"] or self.query.name == "" or string.find( string.lower( string.match( data[itemId][auctionNum][2], "%[([^%[%]]+)%]" ) ), self.query.name, nil, true ) ) then
-				local discard;
-				--
-				if NS.mode == "MOUNTS" then
-					if NS.mountCollection[itemId] and ( ( NS.mountCollection[itemId] == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.mountCollection[itemId] > 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) ) then -- collected(3), Not Collected(1)/Collected(2), key(1)
-						discard = true;
-					end
-				elseif NS.mode == "PETS" then
+			-- Filter: Requires Level
+			if not self.query.qualities[data[itemId][auctionNum][4]] then
+				discard = true;
+			elseif NS.db["maxItemPriceCopper"][NS.mode] ~= 0 and data[itemId][auctionNum][1] > NS.db["maxItemPriceCopper"][NS.mode] then
+				discard = true;
+			elseif not NS.db["live"] and self.query.name ~= "" and not string.find( string.lower( string.match( data[itemId][auctionNum][2], "%[([^%[%]]+)%]" ) ), self.query.name, nil, true ) then
+				discard = true;
+			elseif not NS.mode == "PETS" and not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][1][1]] and data[itemId][auctionNum][5] > NS.linkLevel then -- misc(5), requiresLevel(1), key(1), requiresLevel(5)
+				discard = true;
+			end
+			-- MODE SPECIFIC
+			if NS.mode == "MOUNTS" then
+				-- Filter: Not Collected, Collected
+				if not discard and NS.mountCollection[itemId] and ( ( NS.mountCollection[itemId] == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.mountCollection[itemId] > 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) ) then -- collected(3), Not Collected(1)/Collected(2), key(1)
+					discard = true;
+				end
+			elseif NS.mode == "PETS" then
+				if not discard then
 					if itemId == 82800 then
 						-- Battle Pet
 						local _;
 						_,speciesID,petLevel = strsplit( ":", data[itemId][auctionNum][2] ); -- battlepet:0:speciesID:level:breedQuality:maxHealth:power:speed:customName
 						speciesID,petLevel = tonumber( speciesID ), tonumber( petLevel );
-
 					else
 						-- Companion Pet
 						speciesID,petLevel = NS.petInfo[itemId][1], 1;
@@ -1940,96 +2223,119 @@ function NS.scan:ImportShopData()
 					if not NS.db["modeFilters"][NS.mode][category] then
 						discard = true;
 					end
-					-- Filter: collected
-					if not discard then
-						local collected,collectedMax;
-						if not NS.petCollection[speciesID] then
-							collected,collectedMax = C_PetJournal.GetNumCollectedInfo( speciesID );
-							NS.petCollection[speciesID] = { collected, collectedMax };
-						else
-							collected,collectedMax = unpack( NS.petCollection[speciesID] );
-						end
-						if collected == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] then -- collected(3), Collected (0/3)(1), key(1)
-							discard = true;
-						elseif collected > 0 and collected < collectedMax and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] then -- collected(3), Collected (1-2/3)(2), key(1)
-							discard = true;
-						elseif collected == collectedMax and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][3][1]] then -- collected(3), Collected (3/3)(3), key(1)
-							discard = true;
-						end
-					end
-					-- Filter: petLevels
-					if not discard then
-						if petLevel <= 10 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][1][1]] then -- petLevels(4), Level 1-10(1), key(1)
-							discard = true;
-						elseif petLevel >= 11 and petLevel <= 15 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][2][1]] then -- petLevels(4), Level 11-15(2), key(1)
-							discard = true;
-						elseif petLevel >= 16 and petLevel <= 20 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][3][1]] then -- petLevels(4), Level 16-20(3), key(1)
-							discard = true;
-						elseif petLevel >= 21 and petLevel <= 24 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][4][1]] then -- petLevels(4), Level 21-24(4), key(1)
-							discard = true;
-						elseif petLevel == 25 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][5][1]] then -- petLevels(4), Level 25(5), key(1)
-							discard = true;
-						end
-					end
-				elseif NS.mode == "TOYS" then
-					if NS.toyCollection[itemId] and ( ( NS.toyCollection[itemId] == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.toyCollection[itemId] > 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) ) then -- collected(3), Not Collected(1)/Collected(2), key(1)
-						discard = true;
-					end
-				elseif NS.mode == "APPEARANCES" then
-					-- Filter: itemRequiresLevels
-					if not discard then
-						local itemRequiresLevel = data[itemId][auctionNum][5]; -- requiresLevel(5)
-						--
-						if itemRequiresLevel <= 60 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][1][1]] then -- itemRequiresLevels(4), Level 1-60(1), key(1)
-							discard = true;
-						elseif itemRequiresLevel >= 61 and itemRequiresLevel <= 70 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][2][1]] then -- itemRequiresLevels(4), Level 61-70(2), key(1)
-							discard = true;
-						elseif itemRequiresLevel >= 71 and itemRequiresLevel <= 80 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][3][1]] then -- itemRequiresLevels(4), Level 71-80(3), key(1)
-							discard = true;
-						elseif itemRequiresLevel >= 81 and itemRequiresLevel <= 85 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][4][1]] then -- itemRequiresLevels(4), Level 81-85(4), key(1)
-							discard = true;
-						elseif itemRequiresLevel >= 86 and itemRequiresLevel <= 90 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][5][1]] then -- itemRequiresLevels(4), Level 86-90(5), key(1)
-							discard = true;
-						elseif itemRequiresLevel >= 91 and itemRequiresLevel <= 100 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][6][1]] then -- itemRequiresLevels(4), Level 91-100(6), key(1)
-							discard = true;
-						elseif itemRequiresLevel >= 101 and itemRequiresLevel <= 110 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][7][1]] then -- itemRequiresLevels(4), Level 101-110(7), key(1)
-							discard = true;
-						elseif itemRequiresLevel >= 111 and itemRequiresLevel <= 120 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][8][1]] then -- itemRequiresLevels(4), Level 111-120(8), key(1)
-							discard = true;
-						end
-					end
 				end
-				-- Filter: Crafted by a Profession
-				if not discard and not NS.db["modeFilters"][NS.mode][NS.modeFilters[6][1][1]] then -- craftedByProfession(6), key(1), key(1)
-					if NS.mode == "PETS" and itemId == 82800 then
-						for companionPetId, companionPetInfo in pairs( NS.petInfo ) do
-							if companionPetInfo[1] == speciesID then -- speciesID(1)
-								if NS.craftedItems[companionPetId] then
-									discard = true; -- Craftable Battle Pet? It is if it matches a craftable Companion Pet by speciesID
-								end
-								break;
-							end
-						end
-					elseif NS.craftedItems[itemId] then
+				-- Filter: collected
+				if not discard then
+					local collected,collectedMax;
+					if not NS.petCollection[speciesID] then
+						collected,collectedMax = C_PetJournal.GetNumCollectedInfo( speciesID );
+						NS.petCollection[speciesID] = { collected, collectedMax };
+					else
+						collected,collectedMax = unpack( NS.petCollection[speciesID] );
+					end
+					if collected == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] then -- collected(3), Collected (0/3)(1), key(1)
+						discard = true;
+					elseif collected > 0 and collected < collectedMax and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] then -- collected(3), Collected (1-2/3)(2), key(1)
+						discard = true;
+					elseif collected == collectedMax and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][3][1]] then -- collected(3), Collected (3/3)(3), key(1)
 						discard = true;
 					end
 				end
-				--
-				if not discard and ( ( NS.mode == "PETS" or NS.db["modeFilters"][NS.mode][NS.modeFilters[5][1][1]] ) or data[itemId][auctionNum][5] <= NS.linkLevel ) then -- misc(5), Requires Level(1), key(1), requiresLevel(5)
-					if NS.mode == "APPEARANCES" then
-						appearanceID, sourceID = data[itemId][auctionNum][6], data[itemId][auctionNum][7]; -- appearanceID(6), sourceID(7)
-						if NS.appearanceCollection.appearances[appearanceID] and ( ( not NS.appearanceCollection.appearances[appearanceID][2] and NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.appearanceCollection.appearances[appearanceID][2] and not NS.appearanceCollection.sources[sourceID][2] and NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) or ( NS.appearanceCollection.appearances[appearanceID][2] and NS.appearanceCollection.sources[sourceID][2] and NS.db["modeFilters"][NS.mode][NS.modeFilters[3][3][1]] ) ) then -- isCollected(2)
-							return AddToGroup();
-						else
-							return AdvanceBatch();
+				-- Filter: petLevels
+				if not discard then
+					if petLevel <= 10 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][1][1]] then -- petLevels(4), Level 1-10(1), key(1)
+						discard = true;
+					elseif petLevel >= 11 and petLevel <= 15 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][2][1]] then -- petLevels(4), Level 11-15(2), key(1)
+						discard = true;
+					elseif petLevel >= 16 and petLevel <= 20 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][3][1]] then -- petLevels(4), Level 16-20(3), key(1)
+						discard = true;
+					elseif petLevel >= 21 and petLevel <= 24 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][4][1]] then -- petLevels(4), Level 21-24(4), key(1)
+						discard = true;
+					elseif petLevel == 25 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][5][1]] then -- petLevels(4), Level 25(5), key(1)
+						discard = true;
+					end
+				end
+			elseif NS.mode == "TOYS" then
+				-- Filter: Not Collected, Collected
+				if not discard and NS.toyCollection[itemId] and ( ( NS.toyCollection[itemId] == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.toyCollection[itemId] > 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) ) then -- collected(3), Not Collected(1)/Collected(2), key(1)
+					discard = true;
+				end
+			elseif NS.mode == "APPEARANCES" then
+				-- Filter: itemRequiresLevels
+				if not discard then
+					local itemRequiresLevel = data[itemId][auctionNum][5]; -- requiresLevel(5)
+					--
+					if itemRequiresLevel <= 60 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][1][1]] then -- itemRequiresLevels(4), Level 1-60(1), key(1)
+						discard = true;
+					elseif itemRequiresLevel >= 61 and itemRequiresLevel <= 70 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][2][1]] then -- itemRequiresLevels(4), Level 61-70(2), key(1)
+						discard = true;
+					elseif itemRequiresLevel >= 71 and itemRequiresLevel <= 80 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][3][1]] then -- itemRequiresLevels(4), Level 71-80(3), key(1)
+						discard = true;
+					elseif itemRequiresLevel >= 81 and itemRequiresLevel <= 85 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][4][1]] then -- itemRequiresLevels(4), Level 81-85(4), key(1)
+						discard = true;
+					elseif itemRequiresLevel >= 86 and itemRequiresLevel <= 90 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][5][1]] then -- itemRequiresLevels(4), Level 86-90(5), key(1)
+						discard = true;
+					elseif itemRequiresLevel >= 91 and itemRequiresLevel <= 100 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][6][1]] then -- itemRequiresLevels(4), Level 91-100(6), key(1)
+						discard = true;
+					elseif itemRequiresLevel >= 101 and itemRequiresLevel <= 110 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][7][1]] then -- itemRequiresLevels(4), Level 101-110(7), key(1)
+						discard = true;
+					elseif itemRequiresLevel >= 111 and itemRequiresLevel <= 120 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][8][1]] then -- itemRequiresLevels(4), Level 111-120(8), key(1)
+						discard = true;
+					end
+				end
+				-- Filters: Not Collected, Collected
+				if not discard then
+					appearanceID, sourceID = data[itemId][auctionNum][6], data[itemId][auctionNum][7]; -- appearanceID(6), sourceID(7)
+					if not NS.appearanceCollection.appearances[appearanceID] then
+						discard = true;
+					elseif not NS.appearanceCollection.appearances[appearanceID][2] then -- isCollected(2)
+						-- Filter: Not Collected
+						if not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] then
+							discard = true;
 						end
 					else
-						return AddToGroup();
+						-- Filter: Collected - Unknown Sources
+						if not NS.appearanceCollection.sources[sourceID][2] and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] then
+							discard = true;
+						-- Filter: Collected - Known Sources
+						elseif NS.appearanceCollection.sources[sourceID][2] and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][3][1]] then
+							discard = true;
+						end
 					end
 				end
+				-- Filter: Non-set Items
+				if not discard and not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][3][1]] and not NS.appearanceCollection.appearances[appearanceID][1] then -- misc(5), nonsetItems(3), key(1)
+					discard = true;
+				end
+			elseif NS.mode == "RECIPES" then
+				skillLevel = NS.recipeInfo[itemId][4]; -- skillLevel(4)
+				-- Filter: Not Collected, Collected
+				if not discard and NS.recipeCollection[itemId] and ( ( NS.recipeCollection[itemId] == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.recipeCollection[itemId] > 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) ) then -- collected(3), Not Collected(1)/Collected(2), key(1)
+					discard = true;
+				end
 			end
-			--
-			return AdvanceBatch();
+			-- ALL MODES
+			-- Filter: Crafted by a Profession
+			if not discard and not NS.db["modeFilters"][NS.mode][NS.modeFilters[6][1][1]] then -- craftedByProfession(6), key(1), key(1)
+				if NS.mode == "PETS" and itemId == 82800 then
+					for companionPetId, companionPetInfo in pairs( NS.petInfo ) do
+						if companionPetInfo[1] == speciesID then -- speciesID(1)
+							if NS.craftedItems[companionPetId] then
+								discard = true; -- Craftable Battle Pet? It is if it matches a craftable Companion Pet by speciesID
+							end
+							break;
+						end
+					end
+				elseif NS.craftedItems[itemId] then
+					discard = true;
+				end
+			end
+			-- Discard?
+			if not discard then
+				return AddToGroup();
+			else
+				return AdvanceBatch();
+			end
 		else
 			itemNum = itemNum + 1;
 			return NextItem();
@@ -2041,14 +2347,30 @@ function NS.scan:ImportShopData()
 		--
 		if itemNum <= #itemIds then
 			itemId = NS.mode == "APPEARANCES" and itemIds[itemNum][1] or itemIds[itemNum];
-			category = ( NS.mode == "MOUNTS" and AuctionCategories[12].subCategories[5].name ) or ( NS.mode == "PETS" and "tbd" ) or ( NS.mode == "TOYS" and AuctionCategories[NS.toyInfo[itemId][1]].subCategories[NS.toyInfo[itemId][2]].name .. " (" .. AuctionCategories[NS.toyInfo[itemId][1]].name .. ")" ) or ( NS.mode == "APPEARANCES" and NS.appearanceCollection.categoryNames[itemIds[itemNum][2]] );
+			category =
+			--[[continued]]( NS.mode == "MOUNTS" and AuctionCategories[12].subCategories[5].name ) or
+			--[[continued]]( NS.mode == "PETS" and "tbd" ) or
+			--[[continued]]( NS.mode == "TOYS" and AuctionCategories[NS.toyInfo[itemId][1]].subCategories[NS.toyInfo[itemId][2]].name .. " (" .. AuctionCategories[NS.toyInfo[itemId][1]].name .. ")" ) or
+			--[[continued]]( NS.mode == "APPEARANCES" and NS.appearanceCollection.categoryNames[itemIds[itemNum][2]] ) or
+			--[[continued]]( NS.mode == "RECIPES" and NS.skills.name[NS.skills[NS.recipeInfo[itemId][2]]] );
+			if
+			-- Filter: Category
+			-- Filter: itemId in data?
 			--
-			if ( NS.mode == "MOUNTS" or ( NS.mode == "PETS" and ( itemId == 82800 or NS.db["modeFilters"][NS.mode][NS.modeFilters[2][#NS.modeFilters[2]][1]] ) ) or ( NS.mode == "TOYS" and NS.db["modeFilters"][NS.mode][category] ) or ( NS.mode == "APPEARANCES" and NS.db["modeFilters"][NS.mode][category] ) ) and data[itemId] then -- categories(2), Companion Pets(#2), key(1)
+			-- Mounts: no categories, Pets: categories are determined later, but don't let Companion Pets thru if not checked
+			-- Toys, Appearances: simply category check
+			-- Recipes: category check plus profession (category) must be known by player
+			-- Lastly, check the data to see if the item is present in our auction data
+			--[[continued]]( NS.mode == "MOUNTS" or ( NS.mode == "PETS" and ( itemId == 82800 or NS.db["modeFilters"][NS.mode][NS.modeFilters[2][#NS.modeFilters[2]][1]] ) ) or
+			--[[continued]]( NS.mode == "TOYS" and NS.db["modeFilters"][NS.mode][category] ) or
+			--[[continued]]( NS.mode == "APPEARANCES" and NS.db["modeFilters"][NS.mode][category] ) or
+			--[[continued]]( NS.mode == "RECIPES" and NS.db["modeFilters"][NS.mode][category] and NS.playerProfessions[NS.skills[category]] ) ) and
+			--[[continued]]data[itemId] then -- categories(2), Companion Pets(2), key(1)
 				-- Start auctions for item
 				auctionNum = 1;
 				return NextAuction();
 			else
-				-- Skip item, category not checked or no auctions
+				-- Skip item: category checkbox not checked or no auctions matching the itemId
 				itemNum = itemNum + 1;
 				return NextItem();
 			end
@@ -2056,7 +2378,7 @@ function NS.scan:ImportShopData()
 			-- ALL ITEMS COMPLETE
 			for groupKey = 1, #NS.auction.data.groups do
 				NS.Sort( NS.auction.data.groups[groupKey][5], 1, "ASC" ); -- auctions(5) by itemPrice(1) in ASC
-				NS.AuctionDataGroups_UpdateGroup( groupKey ); -- Update itemName and itemPrice and Lvl to match first auction in group
+				NS.AuctionDataGroups_UpdateGroup( groupKey ); -- Update itemName, itemPrice, and Lvl to match first auction in group
 			end
 			--
 			NS.StatusFrame_Message( L["Filtering, one moment please..."] );
@@ -2071,18 +2393,63 @@ function NS.scan:ImportShopData()
 end
 --
 function NS.scan:FilterGroups( OnComplete, groupKey )
-	-- Filter: Red - Crafting Professions
-	NS.AuctionDataGroups_Filter( groupKey, function( group )
-		return NS.FindInTooltip( group[5][1][2], { r=255, g=32, b=32 }, NS.craftingProfessions, 4 ); -- auctions(5), first auction(1), itemLink(2)
-	end, function()
-		-- Filter: Red - Requires Riding Skill
-		NS.AuctionDataGroups_Filter( groupKey, function( group )
-			return NS.FindInTooltip( group[5][1][2], { r=255, g=32, b=32 }, NS.ridingSpells, 4 ); -- auctions(5), first auction(1), itemLink(2)
-		end, function()
-			-- Complete
-			return OnComplete();
-		end, false, ( NS.mode == "MOUNTS" and not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][3][1]] or false ) ); -- misc(5), Requires Riding Skill(3), key(1)
-	end, false, ( NS.mode ~= "PETS" and not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][2][1]] ) ); -- misc(5), Requires Profession(2), key(1)
+	--
+	-- This method runs a nested series of the following function:
+	-- NS.AuctionDataGroups_Filter( groupKey, FilterFunction, OnGroupsComplete, filterNotMatch, filter )
+	--
+	-- The job of this function is to match (or not match) groups and filter them out of the auction groups.
+	--
+	---------------------------------------------------------------------------------
+	-- #1 Filter: Requires Profession (Level) --- looks for red crafting professions
+	---------------------------------------------------------------------------------
+	NS.AuctionDataGroups_Filter(
+		groupKey,
+
+		-- #1 FilterFunction
+		function( group ) return NS.FindInTooltip( group[5][1][2], { r=255, g=32, b=32 }, NS.craftingProfessions, ( NS.mode == "RECIPES" and 1 or 4 ) ); --[[ auctions(5), first auction(1), itemLink(2) ]] end,
+
+		-- #1 OnGroupsComplete
+		function( filterGroupIds )
+
+			-- #1 filter "analyze" - mark red profession recipe groups to color lvl
+			if NS.mode == "RECIPES" and filterGroupIds then
+				for i = 1, #filterGroupIds do
+					 local groupKey = NS.AuctionDataGroups_FindGroupKey( filterGroupIds[i] );
+					 NS.auction.data.groups[groupKey][8] = true;
+				end
+			end
+
+			--------------------------------------------------------------------
+			-- #2 Filter: Requires Riding Skill --- looks for red riding skills
+			--------------------------------------------------------------------
+			NS.AuctionDataGroups_Filter(
+				groupKey,
+
+				-- #2 FilterFunction
+				function( group ) return NS.FindInTooltip( group[5][1][2], { r=255, g=32, b=32 }, NS.ridingSpells, 4 ); --[[ auctions(5), first auction(1), itemLink(2) ]] end,
+
+				-- #2 OnGroupsComplete
+				function()
+
+					-- <<< THE END >>>
+					return OnComplete();
+				end,
+
+				-- #2 filterNotMatch
+				false,
+
+				-- #2 filter
+				( NS.mode == "MOUNTS" and not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][3][1]] or false ) -- misc(5), Requires Riding Skill(3), key(1)
+			);
+
+		end,
+
+		-- #1 filterNotMatch
+		false,
+
+		-- #1 filter
+		( NS.mode ~= "PETS" and ( not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][2][1]] or ( NS.mode == "RECIPES" and "analyze" ) or false ) ) -- misc(5), requiresProfession(2), key(1)
+	);
 end
 --
 function NS.scan:Complete( cancelMessage )
@@ -2107,14 +2474,24 @@ function NS.scan:Complete( cancelMessage )
 			-- FOUND
 			self.status = "selected";
 			if NS.mode ~= "TOYS" then
-				AuctionFrameCollectionShop_FlyoutPanel:Hide();
-				-- Mount and Pets DressUp data
+				local dressableRecipe = ( NS.mode == "RECIPES" and IsDressableItem( self.query.auction[2] ) );
+				-- Hide Flyout Panel and Open or Close SideDressUpFrame
+				if NS.mode ~= "RECIPES" or dressableRecipe then
+					AuctionFrameCollectionShop_FlyoutPanel:Hide();
+					if not SideDressUpFrame:IsShown() then
+						SideDressUpFrame:Show();
+					end
+				elseif NS.mode == "RECIPES" and SideDressUpFrame:IsShown() then
+					HideUIPanel( SideDressUpFrame );
+					AuctionFrameCollectionShop_FlyoutPanel:Reset();
+				end
+				-- Mount and Pet DressUp data
 				local creatureID,displayID;
-				if NS.mode == "MOUNTS" or NS.mode == "PETS" then
-					if NS.mode == "MOUNTS" then
-						-- Mount
-						creatureID,displayID = nil, NS.mountInfo[self.query.auction[6]][1]; -- itemId(6), displayID(1)
-					elseif self.query.auction[6] == 82800 then -- itemId(6)
+				if NS.mode == "MOUNTS" then
+					-- Mount
+					displayID = NS.mountInfo[self.query.auction[6]][1]; -- itemId(6), displayID(1)
+				elseif NS.mode == "PETS" then
+					if self.query.auction[6] == 82800 then -- itemId(6)
 						-- Battle Pet
 						creatureID,displayID = GetAuctionItemBattlePetInfo( "list", self.query.auction.index );
 					else
@@ -2122,17 +2499,31 @@ function NS.scan:Complete( cancelMessage )
 						creatureID,displayID = NS.petInfo[self.query.auction[6]][2], 0; -- itemId(6), creatureID(2)
 					end
 				end
-				-- DressUp to open SideDressUpFrame
-				if not SideDressUpFrame:IsShown() then
-					if NS.mode == "APPEARANCES" then
-						DressUpVisual( self.query.auction[2] ); -- itemLink(2)
-					elseif ( creatureID or displayID ) then
-						DressUpBattlePet( creatureID, displayID );
+				-- DressUp
+				if NS.mode == "MOUNTS" or NS.mode == "PETS" then
+					if creatureID or displayID then
+						if NS.mode == "MOUNTS" then
+							DressUpMount( displayID );
+						else
+							DressUpBattlePet( creatureID, displayID ); -- Uses creatureID or displayID, not both
+						end
+						-- DressUp again after delay to allow model time to load if not seen before
+						local dressUpID = ( creatureID and creatureID ~= 0 ) and creatureID or displayID;
+						if not NS.cachedDressUpIds[dressUpID] then
+							C_Timer.After( 0.3, function()
+								if NS.mode == "MOUNTS" then
+									DressUpMount( displayID );
+								else
+									DressUpBattlePet( creatureID, displayID );
+								end
+							end );
+							NS.cachedDressUpIds[dressUpID] = true;
+						end
+					else
+						-- creatureID and displayID missing - shouldn't happen but just in case
+						NS.Print( string.format( L["%s cannot be previewed, no model data. Please report to addon developer"], self.query.auction[2] ) ); -- itemLink(2)
 					end
-				end
-				-- DressUp for real
-				if NS.mode == "APPEARANCES" then
-					-- Appearance
+				elseif NS.mode == "APPEARANCES" or ( NS.mode == "RECIPES" and dressableRecipe ) then
 					if NS.db["undressCharacter"] then
 						SideDressUpModel:Undress();
 						PlaySound( 798 ); -- gsTitleOptionOK: Keeps the sound consistent with the ResetButton click below
@@ -2140,17 +2531,6 @@ function NS.scan:Complete( cancelMessage )
 						SideDressUpModelResetButton:Click(); -- ^^
 					end
 					DressUpVisual( self.query.auction[2] ); -- itemLink(2)
-				elseif ( creatureID or displayID ) then
-					-- Mount or Pet
-					DressUpBattlePet( creatureID, displayID );
-					-- DressUp again after delay to allow model time to load if not seen before
-					local dressUpID = ( creatureID and creatureID ~= 0 ) and creatureID or displayID;
-					if not NS.cachedDressUpIds[dressUpID] then
-						C_Timer.After( 0.3, function() DressUpBattlePet( creatureID, displayID ); end );
-						NS.cachedDressUpIds[dressUpID] = true;
-					end
-				else
-					NS.Print( string.format( L["%s cannot be previewed, no model data. Please report to addon developer"], self.query.auction[2] ) ); -- itemLink(2)
 				end
 			end
 			AuctionFrameCollectionShop_DialogFrame_BuyoutFrame_SelectedOwnerEditbox:SetText( ( self.selectedOwner and self.selectedOwner or L["Unknown"] ) );
@@ -2310,6 +2690,11 @@ function NS.scan:AfterAuctionWon()
 		if NS.shopAppearancesBy == "appearance" or not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][3][1]] then -- collected(3), Collected - Known Sources(3), key(1)
 			removeGroup = true;
 		end
+	elseif NS.mode == "RECIPES" then
+		NS.recipeCollection[self.query.auction[6]] = 1; -- itemId(6), collected(1)
+		if not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] then -- collected(3), Collected(2), key(1)
+			removeGroup = true;
+		end
 	end
 	-- Remove Group(s) or Auction
 	local groupId; -- If Auction removed instead of Group, we need groupKey to reselect
@@ -2381,6 +2766,13 @@ NS.UpdateToyCollection = function()
 	NS.Reset();
 end
 --
+NS.UpdateRecipeCollection = function()
+	for itemId,_ in pairs( NS.recipeInfo ) do
+		NS.recipeCollection[itemId] = IsPlayerSpell( NS.recipeInfo[itemId][1] ) and 1 or 0; -- spellID (1)
+	end
+	NS.Reset();
+end
+--
 NS.GetAppearanceSourceInfo = function( itemLink )
     local _,_,_,invType = GetItemInfoInstant( itemLink );
     local slotId = NS.invTypeToSlotId[invType];
@@ -2428,6 +2820,18 @@ NS.SlashCmdHandler = function( cmd )
 		NS.options.MainFrame:ShowTab( 3 );
 	elseif cmd == "help" then
 		NS.options.MainFrame:ShowTab( 4 );
+	elseif cmd == "recipes" then
+		local numRecipes = NS.Count( NS.recipeInfo );
+		local numWithSkill, numWithoutSkill = 0, 0;
+		for _,info in pairs( NS.recipeInfo ) do
+			if NS.skills[info[2]] then
+				numWithSkill = numWithSkill + 1;
+			else
+				numWithoutSkill = numWithoutSkill + 1;
+				NS.Print( numWithoutSkill .. '. ' .. info[1] .. ', ' .. info[2] .. ', ' .. info[3] .. ', ' .. info[4] .. ': ' .. GetSpellInfo( info[1] ) );
+			end
+		end
+		NS.Print( 'Recipes: ' .. numRecipes .. ' (' .. numWithSkill .. ' with skill, ' .. numWithoutSkill .. ' without skill)' );
 	elseif cmd == "data" then
 		if NS.db["getAllScan"][NS.realmName] then
 			local data = NS.db["getAllScan"][NS.realmName]["data"];
@@ -2667,7 +3071,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 						_G[bn .. "_IconTexture"]:SetScript( "OnClick", OnClick );
 						_G[bn .. "_NameText"]:SetText( items[k][2] ); -- group name(2)
 						_G[bn .. "_NameText"]:SetTextColor( GetItemQualityColor( items[k][5][1][4] ) ); -- auctions(5), first auction(1), quality(4)
-						_G[bn .. "_LvlText"]:SetText( ( NS.mode ~= "PETS" and items[k][6] > NS.linkLevel ) and RED_FONT_COLOR_CODE .. items[k][6] .. FONT_COLOR_CODE_CLOSE or items[k][6] ); -- group lvl(6)
+						_G[bn .. "_LvlText"]:SetText( ( ( NS.mode ~= "PETS" and NS.mode ~= "RECIPES" and items[k][6] > NS.linkLevel ) or ( NS.mode == "RECIPES" and items[k][8] ) ) and RED_FONT_COLOR_CODE .. items[k][6] .. FONT_COLOR_CODE_CLOSE or items[k][6] ); -- group lvl(6) requiresProfession(Level)(8)
 						--
 						local category = items[k][3];
 						if NS.mode == "MOUNTS" then
@@ -2680,6 +3084,8 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 						elseif NS.mode == "APPEARANCES" then
 							local appearanceID, sourceID = items[k][5][1][8], items[k][5][1][9]; -- auctions(5), first auction(1), appearanceID(8), sourceID(9)
 							category = ( not NS.appearanceCollection.appearances[appearanceID][2] and NS.modeColorCode .. category .. FONT_COLOR_CODE_CLOSE ) or ( not NS.appearanceCollection.sources[sourceID][2] and NORMAL_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE ) or RED_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE; -- isCollected(2)
+						elseif NS.mode == "RECIPES" then
+							category = ( NS.recipeCollection[items[k][5][1][6]] == 0 and NS.modeColorCode .. category .. FONT_COLOR_CODE_CLOSE ) or RED_FONT_COLOR_CODE .. category .. FONT_COLOR_CODE_CLOSE; -- auctions(5), first auction(1), itemId(6)
 						end
 						_G[bn .. "_CategoryText"]:SetText( category ); -- group category(3)
 						--
@@ -2748,7 +3154,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 	NS.Button( "_MountsModeButton", AuctionFrameCollectionShop_ModeSelectionFrame, nil, {
 		template = false,
 		size = { 96, 96 },
-		setPoint = { "TOPLEFT", "$parent", "TOPLEFT", 144.5, -108 },
+		setPoint = { "TOPLEFT", "$parent", "TOPLEFT", 86.5, -108 },
 		normalTexture = 631718,
 		OnClick = function ()
 			NS.SetMode( 1 ); -- MOUNTS
@@ -2800,6 +3206,21 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		end,
 		OnEnter = function()
 			AuctionFrameCollectionShop_ModeSelectionFrame_ModeHoverFrameText:SetText( NS.modeColorCodes[4] .. NS.modeNames[4] .. FONT_COLOR_CODE_CLOSE );
+		end,
+		OnLeave = function()
+			AuctionFrameCollectionShop_ModeSelectionFrame_ModeHoverFrameText:SetText();
+		end,
+	} );
+	NS.Button( "_RecipesModeButton", AuctionFrameCollectionShop_ModeSelectionFrame, nil, {
+		template = false,
+		size = { 96, 96 },
+		setPoint = { "LEFT", "#sibling", "RIGHT", 20, 0 },
+		normalTexture = 134939,
+		OnClick = function ()
+			NS.SetMode( 5 ); -- RECIPES
+		end,
+		OnEnter = function()
+			AuctionFrameCollectionShop_ModeSelectionFrame_ModeHoverFrameText:SetText( NS.modeColorCodes[5] .. NS.modeNames[5] .. FONT_COLOR_CODE_CLOSE );
 		end,
 		OnLeave = function()
 			AuctionFrameCollectionShop_ModeSelectionFrame_ModeHoverFrameText:SetText();
@@ -3013,6 +3434,8 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 						self:SetNormalTexture( 454046 );
 					elseif NS.mode == "APPEARANCES" then
 						self:SetNormalTexture( 132658 );
+					elseif NS.mode == "RECIPES" then
+						self:SetNormalTexture( 134939 );
 					end
 					self:Show();
 				end

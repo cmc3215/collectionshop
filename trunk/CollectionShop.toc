@@ -1,14 +1,15 @@
 ## Interface: 80000
 ## Title: CollectionShop
-## Version: 2.11
+## Version: 3.0
 ## Author: Clinton Caldwell
-## Notes: Find and buy the lowest buyout Mounts, Pets, Toys, and Appearances.
+## Notes: Find and buy the lowest buyout Mounts, Pets, Toys, Appearances, and Recipes.
 ## SavedVariables: COLLECTIONSHOP_SAVEDVARIABLES
 ## SavedVariablesPerCharacter: COLLECTIONSHOP_SAVEDVARIABLESPERCHARACTER
 
 Templates.xml
 Localization.lua
 Base.lua
+Recipes.lua
 CraftedItems.lua
 CollectionShop.lua
 OptionsConfig.lua
