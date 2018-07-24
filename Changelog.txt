@@ -1,4 +1,4 @@
-**2.12**
+**3.0**
 
 - Release date: 07/24/2018
 - New "Recipes" mode for Profession Recipes
