@@ -10,7 +10,7 @@ NS.options.cfg = {
 	--
 	mainFrame = {
 		width		= 600,
-		height		= 420,
+		height		= 440,
 		portrait	= true,
 		frameStrata	= "MEDIUM",
 		frameLevel	= "TOP",
@@ -94,7 +94,7 @@ NS.options.cfg = {
 				end
 				NS.TextFrame( "TSMItemValueSourceLabel", SubFrame, L["Item Value Source"], {
 					setPoint = {
-						{ "TOPLEFT", "$parentMaxItemPriceMode4Editbox", "BOTTOMLEFT", -4, -12 },
+						{ "TOPLEFT", "$parentMaxItemPriceMode" .. #NS.modes .. "Editbox", "BOTTOMLEFT", -4, -12 },
 						{ "RIGHT", -8 },
 					},
 					fontObject = "GameFontHighlight",
@@ -233,7 +233,7 @@ NS.options.cfg = {
 					},
 				} );
 				NS.TextFrame( "AuctionsWon", SubFrame, "", {
-					size = { 553, 53 },
+					size = { 553, 63 },
 					setPoint = { "TOP", "#sibling", "BOTTOM" },
 					fontObject = "GameFontNormal",
 					justifyH = "CENTER",

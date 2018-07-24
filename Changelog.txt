@@ -1,3 +1,11 @@
+**2.12**
+
+- Release date: 07/24/2018
+- New "Recipes" mode for Profession Recipes
+- New "Non-set items" filter for Appearances, unchecking it will show only items belonging to one or more of the Appearance sets.
+- GetAll data for all realms will be wiped due to information required for the Recipes mode.
+- Please be sure to close the World of Warcraft client completely before attempting to use the latest version of CollectionShop.
+
 **2.11**
 
 - Release date: 07/18/2018

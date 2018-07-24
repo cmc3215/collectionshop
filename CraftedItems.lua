@@ -2364,4 +2364,13 @@ NS.craftedItems = {
 	[151771] = 1, -- Festival Dress
 	[151772] = 1, -- Festival Suit
 	[151792] = 1, -- Green Winter Clothes
+	--
+	-- Recipes
+	-- Wowhead Recipes w/Filters - http://www.wowhead.com/recipe-items?filter=2:86;2:11;0:0
+	-- Binds when picked up = No
+	-- Crafted by a profession = Yes
+	--
+	[113992] = 1, -- Scribe's Research Notes
+	[10644] = 1, -- Recipe: Goblin Rocket Fuel
+	[10713] = 1, -- Plans: Inlaid Mithril Cylinder
 };
