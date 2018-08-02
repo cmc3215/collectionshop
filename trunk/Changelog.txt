@@ -1,3 +1,8 @@
+**3.02**
+
+- Release date: 08/02/2018
+- Bug fixed: Recipes mode Shop resulted in a Lua error. Required Level comparison was failing because table was being stored instead of number.
+
 **3.01**
 
 - Release date: 08/02/2018
