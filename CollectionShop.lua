@@ -4,7 +4,7 @@
 local NS = select( 2, ... );
 local L = NS.localization;
 NS.releasePatch = "8.0.1";
-NS.versionString = "3.0";
+NS.versionString = "3.01";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -2198,7 +2198,7 @@ function NS.scan:ImportShopData()
 				discard = true;
 			elseif not NS.db["live"] and self.query.name ~= "" and not string.find( string.lower( string.match( data[itemId][auctionNum][2], "%[([^%[%]]+)%]" ) ), self.query.name, nil, true ) then
 				discard = true;
-			elseif not NS.mode == "PETS" and not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][1][1]] and data[itemId][auctionNum][5] > NS.linkLevel then -- misc(5), requiresLevel(1), key(1), requiresLevel(5)
+			elseif NS.mode ~= "PETS" and not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][1][1]] and data[itemId][auctionNum][5] > NS.linkLevel then -- misc(5), requiresLevel(1), key(1), requiresLevel(5)
 				discard = true;
 			end
 			-- MODE SPECIFIC
