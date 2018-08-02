@@ -4,7 +4,7 @@
 local NS = select( 2, ... );
 local L = NS.localization;
 NS.releasePatch = "8.0.1";
-NS.versionString = "3.01";
+NS.versionString = "3.02";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -649,6 +649,10 @@ NS.Upgrade = function()
 		-- New mode settings, RECIPES (5)
 		NS.db["maxItemPriceCopper"][NS.modes[5]] = 0;
 		NS.db["modeFilters"][NS.modes[5]] = {};
+	end
+	-- 3.02
+	if version < 3.02 then
+		wipe( NS.db["getAllScan"] ); -- Fixed bad recipe level table error
 	end
 	--
 	NS.db["version"] = NS.version;
@@ -1895,7 +1899,7 @@ function NS.scan:GetAuctionItemInfo( index )
 					itemLink,
 					texture,
 					quality,
-					( levelColHeader == "REQ_LEVEL_ABBR" and level or ( auctionItemType == "recipe" and NS.recipeInfo[itemId][3] > 1 and NS.recipeInfo[itemId] ) or 1 ), -- requiresLevel -- requiredLevel(3)
+					( levelColHeader == "REQ_LEVEL_ABBR" and level or ( auctionItemType == "recipe" and NS.recipeInfo[itemId][3] > 1 and NS.recipeInfo[itemId][3] ) or 1 ), -- requiresLevel -- requiredLevel(3)
 					appearanceID,
 					sourceID,
 				};
