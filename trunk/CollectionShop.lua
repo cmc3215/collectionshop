@@ -4,7 +4,7 @@
 local NS = select( 2, ... );
 local L = NS.localization;
 NS.releasePatch = "8.0.1";
-NS.versionString = "3.02";
+NS.versionString = "3.03";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -1393,8 +1393,8 @@ NS.AuctionDataGroups_UpdateGroup = function( groupKey )
 		NS.auction.data.groups[groupKey][5][1][2] = NS.NormalizeItemLink( NS.auction.data.groups[groupKey][5][1][2] );
 	end
 	-- Update Group
-	local itemValue = NS.isPctItemValue and ( NS.tsmPriceSources[NS.db["tsmItemValueSource"]] and ( TSMAPI_FOUR and TSMAPI_FOUR.CustomPrice.GetItemPrice( NS.auction.data.groups[groupKey][5][1][2], NS.db["tsmItemValueSource"] ) or TSMAPI:GetItemValue( NS.auction.data.groups[groupKey][5][1][2], NS.db["tsmItemValueSource"] ) ) or
-	--[[continued]]( TSMAPI_FOUR and TSMAPI_FOUR.CustomPrice.GetValue( NS.db["tsmItemValueSource"], NS.auction.data.groups[groupKey][5][1][2] ) or TSMAPI:GetCustomPriceValue( NS.db["tsmItemValueSource"], NS.auction.data.groups[groupKey][5][1][2] ) ) ) or nil;
+	local itemValue = NS.isPctItemValue and ( NS.tsmPriceSources[NS.db["tsmItemValueSource"]] and ( TSMAPI_FOUR and TSMAPI_FOUR.CustomPrice.GetItemPrice( NS.auction.data.groups[groupKey][5][1][2], NS.db["tsmItemValueSource"] ) or ( not TSMAPI_FOUR and TSMAPI:GetItemValue( NS.auction.data.groups[groupKey][5][1][2], NS.db["tsmItemValueSource"] ) ) ) or
+	--[[continued]]( TSMAPI_FOUR and TSMAPI_FOUR.CustomPrice.GetValue( NS.db["tsmItemValueSource"], NS.auction.data.groups[groupKey][5][1][2] ) or ( not TSMAPI_FOUR and TSMAPI:GetCustomPriceValue( NS.db["tsmItemValueSource"], NS.auction.data.groups[groupKey][5][1][2] ) ) ) ) or nil;
 	NS.auction.data.groups[groupKey][2] = string.match( NS.auction.data.groups[groupKey][5][1][2], "%|h%[(.+)%]%|h" ); -- group name(2) copied from auctions(5), then first auction(1), get name via itemLink(2)
 	NS.auction.data.groups[groupKey][4] = NS.auction.data.groups[groupKey][5][1][1]; -- group itemPrice(4) copied from auctions(5), then first auction(1), then itemPrice(1)
 	NS.auction.data.groups[groupKey][6] = ( NS.mode == "PETS" or NS.mode == "RECIPES" ) and NS.auction.data.groups[groupKey][5][1][9] or NS.auction.data.groups[groupKey][5][1][5]; -- group lvl(6) copied from auctions(5), then first auction(1), then lvl(9) or requiresLevel(5)
@@ -2926,7 +2926,7 @@ NS.TextFrame( "Text", CollectionShopInterfaceOptionsPanel, L["Use either slash c
 --------------------------------------------------------------------------------------------------------------------------------------------
 NS.Blizzard_AuctionUI_OnLoad = function()
 	if AuctionFrameCollectionShop then return end -- Make absolute sure this code only runs once
-	NS.tsmPriceSources = ( TSMAPI_FOUR and NS.TSMAPI_FOUR_GetPriceSources() ) or ( TSMAPI and TSMAPI:GetPriceSources() ) or nil; -- TSM Price Sources
+	NS.tsmPriceSources = ( TSMAPI_FOUR and NS.TSMAPI_FOUR_GetPriceSources() ) or ( not TSMAPI_FOUR and TSMAPI and TSMAPI:GetPriceSources() ) or nil; -- TSM Price Sources
 	--
 	NS.Frame( "AuctionFrameCollectionShop", UIParent, {
 		topLevel = true,

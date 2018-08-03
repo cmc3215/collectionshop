@@ -1,3 +1,8 @@
+**3.03**
+
+- Release date: 08/02/2018
+- Bug fixed: Lua errors and addon hanging were being caused by incorrect TSM 4 compatibility statements.
+
 **3.02**
 
 - Release date: 08/02/2018
