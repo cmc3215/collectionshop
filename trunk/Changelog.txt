@@ -1,3 +1,9 @@
+**3.04**
+
+- Release date: 08/04/2018
+- Bug fixed: Recipes mode was showing class-specific recipes the player was unable to learn.
+- New "Requires Profession Specialization" filter added to Recipes mode. This will toggle whether to include recipes that the player possesses the profession for but not the specialization (e.g. Gnomish or Goblin Engineer).
+
 **3.03**
 
 - Release date: 08/02/2018
@@ -34,7 +40,7 @@
 **2.09**
 
 - Release date: 07/05/2018
-- Bug fix: Toy box Shop resulted in Lua error.
+- Bug fixed: Toy box Shop resulted in Lua error.
 
 **2.08**
 
@@ -51,14 +57,14 @@
 - New option "Auto-select After Auction Unavailable." This option toggles automatically searching for and scrolling to the next cheapest auction of the same appearance, same pet, etc. when an auction is no longer available.
 - New "Seller:" text box added that contains the seller name for the selected auction. The idea being that players can not only see who is selling the item, but also click into the box to copy the seller's name for contacting them via in-game mail.
 - New warning message added concerning incompatibility with the Auctioneer addon.
-- Bug fix: The Live checkbox was being disabled after an item that was no longer available was removed without an additional item being selected.
+- Bug fixed: The Live checkbox was being disabled after an item that was no longer available was removed without an additional item being selected.
 - Added the game patch number that CollectionShop was created for to the Help tab.
 - Updated Curse URL on Help tab.
 
 **2.06**
 
 - Release date: 10/01/2017
-- Bug fix: Four variables were being accidentally put into global namespace. For most users this had no effect, but for others it may have caused minor taint issues.
+- Bug fixed: Four variables were being accidentally put into global namespace. For most users this had no effect, but for others it may have caused minor taint issues.
 
 **2.05**
 
@@ -71,7 +77,7 @@
 
 - Release date: 08/30/2017
 - TOC Updated for patch 7.3
-- Bug fix: Lua error in patch 7.3 on PlaySound() API call.
+- Bug fixed: Lua error in patch 7.3 on PlaySound() API call.
 
 **2.03**
 
@@ -82,13 +88,13 @@
 **2.02**
 
 - Release date: 07/18/2017
-- Bug fix: In rare situations an Appearance Shop would get stuck at "Filtering, one moment please...".
+- Bug fixed: In rare situations an Appearance Shop would get stuck at "Filtering, one moment please...".
 
 **2.01**
 
 - Release date: 07/18/2017
-- Bug fix: In some cases not all Sources were being gathered to determine if an Appearance was collected (API inconsistencies) and may have returned Collected items as being Not Collected.
-- Bug fix: Rarely a noticable effect but in the event an Appearance Shop was performed within a few seconds of login or reload the number of results may have been reduced. The internal timeout has been increased for checking Sources to compensate for the game's info lag during that time.
+- Bug fixed: In some cases not all Sources were being gathered to determine if an Appearance was collected (API inconsistencies) and may have returned Collected items as being Not Collected.
+- Bug fixed: Rarely a noticable effect but in the event an Appearance Shop was performed within a few seconds of login or reload the number of results may have been reduced. The internal timeout has been increased for checking Sources to compensate for the game's info lag during that time.
 - Live checkbox now disabled while scanning to prevent accidental cancellation of a GetAll scan.
 
 **2.0**
@@ -117,7 +123,7 @@
 **1.13**
 
 - Release date: 03/31/2017
-- Bug fix: In patch 7.2 some Auction House categories were changed causing issues in Pets and Toys mode.
+- Bug fixed: In patch 7.2 some Auction House categories were changed causing issues in Pets and Toys mode.
 
 **1.12**
 
@@ -127,7 +133,7 @@
 **1.11**
 
 - Release date: 01/10/2017
-- Bug fix: Lua error to do with money color codes introduced in last update accidentally.
+- Bug fixed: Lua error to do with money color codes introduced in last update accidentally.
 
 **1.10**
 
@@ -145,7 +151,7 @@
 **1.08**
 
 - Release date: 12/01/2016
-- Bug fix: Lua error when looting a new Appearance from a Timewalking Dungeon after using CollectionShop Appearances mode.
+- Bug fixed: Lua error when looting a new Appearance from a Timewalking Dungeon after using CollectionShop Appearances mode.
 
 **1.07**
 
@@ -155,14 +161,14 @@
 **1.06**
 
 - Release date: 10/02/2016
-- Bug fix: A very few Appearances were showing as Not Collected even when they were due to being "Collected" in one Appearance category while being "Not Collected" in another. Thanks to Curse user Tarasitarik for reporting this issue.
+- Bug fixed: A very few Appearances were showing as Not Collected even when they were due to being "Collected" in one Appearance category while being "Not Collected" in another. Thanks to Curse user Tarasitarik for reporting this issue.
 
 **1.05**
 
 - Release date: 09/11/2016
 - You must first exit "World of Warcraft" completely.
 - Improved detection of Not Collected vs Collected on Mounts and Toys
-- Bug fix: In rare situations changing options would close the options frame unintentionally.
+- Bug fixed: In rare situations changing options would close the options frame unintentionally.
 - New optional results column for users of the popular TradeSkillMaster addon, "% Item Value". This will allow viewing and sorting by this value to determine how good of a price you're getting on your collection buyouts.
 - New option for previously mentioned column, "Item Value Source". This option is the price source or custom price source used to calculate the Item Value.
 
@@ -179,13 +185,13 @@
 **1.02**
 
 - Release date: 09/08/2016
-- Bug fix: Rare Lua error on slow connections caused by previous increase in filter retry attempts.
-- Bug fix: Sometimes on slow connections, auctions were said to be no longer available when really there was just not enough time given to find the information required. Increased retry attempts to compensate, this should no longer happen.
+- Bug fixed: Rare Lua error on slow connections caused by previous increase in filter retry attempts.
+- Bug fixed: Sometimes on slow connections, auctions were said to be no longer available when really there was just not enough time given to find the information required. Increased retry attempts to compensate, this should no longer happen.
 
 **1.01**
 
 - Release date: 09/07/2016
-- Bug fix: Occasionally items Already known would be listed as Not Collected due to slow response in retrieving item information. I've increased retry attempts to retrieve item information for filters to avoid inaccurate results. Should an item still fail during filtering a chat message will be shown.
+- Bug fixed: Occasionally items Already known would be listed as Not Collected due to slow response in retrieving item information. I've increased retry attempts to retrieve item information for filters to avoid inaccurate results. Should an item still fail during filtering a chat message will be shown.
 
 **1.0**
 
