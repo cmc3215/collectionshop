@@ -4,7 +4,7 @@
 local NS = select( 2, ... );
 local L = NS.localization;
 NS.releasePatch = "8.0.1";
-NS.versionString = "3.03";
+NS.versionString = "3.04";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -49,6 +49,7 @@ NS.auction = {
 };
 NS.linkLevel = nil;
 NS.linkSpecID = nil;
+NS.playerClassID = select( 3, UnitClass( "player" ) );
 NS.playerProfessions = {};
 NS.numAuctionsWon = 0;
 NS.copperAuctionsWon = 0;
@@ -1006,6 +1007,7 @@ NS.SetMode = function( mode, noReset )
 			{
 				requiresLevel,
 				requiresProfession,
+				{ "requiresProfessionSpec", RED_FONT_COLOR_CODE .. L["Requires Profession Spec"] .. FONT_COLOR_CODE_CLOSE, false },
 			},
 			{ craftedByProfession },
 		};
@@ -2313,9 +2315,17 @@ function NS.scan:ImportShopData()
 				end
 			elseif NS.mode == "RECIPES" then
 				skillLevel = NS.recipeInfo[itemId][4]; -- skillLevel(4)
-				-- Filter: Not Collected, Collected
-				if not discard and NS.recipeCollection[itemId] and ( ( NS.recipeCollection[itemId] == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.recipeCollection[itemId] > 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) ) then -- collected(3), Not Collected(1)/Collected(2), key(1)
-					discard = true;
+				if not discard then
+					-- Filter: Not Collected, Collected
+					if NS.recipeCollection[itemId] and ( ( NS.recipeCollection[itemId] == 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][1][1]] ) or ( NS.recipeCollection[itemId] > 0 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[3][2][1]] ) ) then -- collected(3), Not Collected(1)/Collected(2), key(1)
+						discard = true;
+					-- Filter: Requires Profession Specialization
+					elseif not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][3][1]] and NS.recipeInfo[itemId][5] --[[spellID]] and not IsPlayerSpell( NS.recipeInfo[itemId][5] ) then -- misc(5), requiresProfessionSpec(5), key(1), requiresAbility(5) x 2
+						discard = true;
+					-- Remove non-usable class-specific recipes
+					elseif NS.recipeInfo[itemId][6] and not NS.FindKeyByValue( NS.recipeInfo[itemId][6], NS.playerClassID ) then -- allowableClasses(6)
+						discard = true;
+					end
 				end
 			end
 			-- ALL MODES
