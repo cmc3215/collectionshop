@@ -1007,7 +1007,7 @@ NS.SetMode = function( mode, noReset )
 			{
 				requiresLevel,
 				requiresProfession,
-				{ "requiresProfessionSpec", RED_FONT_COLOR_CODE .. L["Requires Profession Spec"] .. FONT_COLOR_CODE_CLOSE, false },
+				{ "requiresProfessionSpec", RED_FONT_COLOR_CODE .. L["Requires Profession Specialization"] .. FONT_COLOR_CODE_CLOSE, false },
 			},
 			{ craftedByProfession },
 		};
