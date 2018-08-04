@@ -1,3 +1,8 @@
+**3.05**
+
+- Release date: 08/04/2018
+- Fixed filter typo.
+
 **3.04**
 
 - Release date: 08/04/2018
