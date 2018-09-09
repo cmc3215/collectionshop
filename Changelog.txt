@@ -1,3 +1,8 @@
+**3.06**
+
+- Release date: 09/08/2018
+- Increased timeout for querying the Auction House.
+
 **3.05**
 
 - Release date: 08/04/2018
