@@ -4,7 +4,7 @@
 local NS = select( 2, ... );
 local L = NS.localization;
 NS.releasePatch = "8.0.1";
-NS.versionString = "3.04";
+NS.versionString = "3.06";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -1565,7 +1565,7 @@ function NS.scan:Reset()
 		qualities = {}, -- SHOP
 		totalPages = 0,
 		attempts = 1,
-		maxAttempts = 50,
+		maxAttempts = 100,
 	};
 	self.type = nil;
 	self.status = "ready"; -- ready, scanning, selected, buying
