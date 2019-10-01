@@ -1,3 +1,9 @@
+**3.09**
+
+- Release date: 10/1/2019
+- Minor compatibility fixes for patch 8.2.5 that were causing LUA errors.
+- Items updated for patch 8.2.5.
+
 **3.08**
 
 - Release date: 07/28/2019
