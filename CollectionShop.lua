@@ -4,7 +4,7 @@
 local NS = select( 2, ... );
 local L = NS.localization;
 NS.releasePatch = "8.2.5";
-NS.versionString = "3.10";
+NS.versionString = "3.11";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
