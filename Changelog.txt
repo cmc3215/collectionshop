@@ -1,3 +1,8 @@
+**3.12**
+
+- Release date: 12/21/2019
+- Compatibility fixes for TSM 4 API changes. Removed support for TSM 3.
+
 **3.11**
 
 - Release date: 10/12/2019
