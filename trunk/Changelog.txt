@@ -1,3 +1,13 @@
+**4.0**
+
+- Release date: 05/08/2020
+- TOC updated for patch 8.3.0.
+- Live scan disabled temporarily until it can be made compatible with patch 8.3.0.
+- Blizzard's full Auction House scan can be used as often as every 20 min now instead 15 min.
+- Major compatibility fixes for patch 8.3.0.
+- UI adjusted to match new Auction House appearance.
+- New Crafted Gear added for latest patch.
+
 **3.12**
 
 - Release date: 12/21/2019

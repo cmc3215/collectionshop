@@ -118,7 +118,7 @@ NS.options.cfg = {
 					end,
 					OnEditFocusLost = function( self )
 						self:HighlightText( 0, 0 );
-						local source = self:GetText();
+						local source = strtrim( self:GetText() );
 						if source ~= NS.db["tsmItemValueSource"] then
 							-- Validate Source
 							if TSM_API and source ~= "" then

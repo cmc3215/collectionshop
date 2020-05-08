@@ -3,8 +3,8 @@
 --------------------------------------------------------------------------------------------------------------------------------------------
 local NS = select( 2, ... );
 local L = NS.localization;
-NS.releasePatch = "8.2.5";
-NS.versionString = "3.12";
+NS.releasePatch = "8.3.0";
+NS.versionString = "4.0";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -12,7 +12,7 @@ NS.options = {};
 NS.initialized = false;
 NS.realmName = GetRealmName();
 NS.playerLoginMsg = {};
-NS.AuctionFrameTab = nil;
+NS.AuctionHouseFrameTab = nil;
 NS.scan = {};
 NS.modes = { "MOUNTS", "PETS", "TOYS", "APPEARANCES", "RECIPES" };
 NS.modeNames = { "Mounts", "Pets", "Toys", "Appearances", "Recipes" };
@@ -267,7 +267,7 @@ for i = 1, #NS.ridingSpells do
 	end
 end
 NS.mountInfo = {
-	-- As of 10/1/2019
+	-- As of 05/08/2020
 	--[mountItemId] = { displayID, spellID }, -- creatureName -- itemName
 	[90655] = { 45797, 132036 }, -- Thundering Ruby Cloud Serpent -- Reins of the Thundering Ruby Cloud Serpent
 	[153594] = { 80513, 256123 }, -- Xiwyllag ATV -- Xiwyllag ATV
@@ -317,9 +317,9 @@ NS.mountInfo = {
 	[49290] = { 34655, 65917 }, -- Magic Rooster -- Magic Rooster Egg
 };
 NS.petInfo = {
-	-- As of 10/1/2019
+	-- As of 05/08/2020
 	--[companionPetItemId] = { speciesID, creatureID }, -- itemName
-	[173296] = { 0000, 000000}, -- Rikki's Pith Helmet
+	--[[ not in game ]] [173296] = { 0000, 000000}, -- Rikki's Pith Helmet
 	[170072] = { 2766, 155829}, -- Armored Vaultbot
 	[167810] = { 2763, 151632}, -- Slimy Hermit Crab
 	[167806] = { 2760, 151673}, -- Slimy Octopode
@@ -510,7 +510,7 @@ NS.petInfo = {
 	[146953] = { 2042, 120397 }, -- Scraps
 };
 NS.toyInfo = {
-	-- As of 10/1/2019
+	-- As of 05/08/2020
 	--[toyItemId] = { catNum, subCatNum }, -- itemName
 	[168807] = { 6, 1 }, -- Wormhole Generator: Kul Tiras
 	[168808] = { 6, 1 }, -- Wormhole Generator: Zandalar
@@ -665,9 +665,9 @@ NS.Upgrade = function()
 		NS.db["maxItemPriceCopper"][NS.modes[5]] = 0;
 		NS.db["modeFilters"][NS.modes[5]] = {};
 	end
-	-- 3.02
-	if version < 3.02 then
-		wipe( NS.db["getAllScan"] ); -- Fixed bad recipe level table error
+	-- 3.02 / 4.0
+	if version < 4.0 then
+		wipe( NS.db["getAllScan"] ); -- Fixed bad recipe level table error in 3.02 and reset in 4.0 for massive AH changes in 8.3
 	end
 	--
 	NS.db["version"] = NS.version;
@@ -684,19 +684,11 @@ NS.UpgradePerCharacter = function()
 	NS.dbpc["version"] = NS.version;
 end
 --------------------------------------------------------------------------------------------------------------------------------------------
--- AuctionFrameTab / SideDressUpModel
+-- AuctionHouseFrameCollectionShopTab / DressUpModel
 --------------------------------------------------------------------------------------------------------------------------------------------
-NS.AuctionFrameTab_OnClick = function( self, button, down, index ) -- AuctionFrameTab_OnClick
-	if NS.AuctionFrameTab:GetID() == self:GetID() then
-		AuctionFrameTopLeft:SetTexture( "Interface\\AuctionFrame\\UI-AuctionFrame-Bid-TopLeft" );
-		AuctionFrameTop:SetTexture( "Interface\\AuctionFrame\\UI-AuctionFrame-Auction-Top" );
-		AuctionFrameTopRight:SetTexture( "Interface\\AuctionFrame\\UI-AuctionFrame-Auction-TopRight" );
-		AuctionFrameBotLeft:SetTexture( "Interface\\AuctionFrame\\UI-AuctionFrame-Bid-BotLeft" );
-		AuctionFrameBot:SetTexture( "Interface\\AuctionFrame\\UI-AuctionFrame-Auction-Bot" );
-		AuctionFrameBotRight:SetTexture( "Interface\\AuctionFrame\\UI-AuctionFrame-Bid-BotRight" );
-		AuctionFrameMoneyFrame:Show();
-		AuctionFrameCollectionShop:Show();
-		--
+NS.AuctionHouseFrame_SetDisplayMode = function( self, displayMode ) -- AuctionHouseFrame.SetDisplayMode
+	if displayMode == AuctionHouseFrameDisplayMode.CollectionShop then
+		NS.UpdateTitleText(); -- Clears the "Browse Auctions" Blizzard title text
 		NS.linkLevel = UnitLevel( "player" );
 		CollectionShopEventsFrame:RegisterEvent( "PLAYER_SPECIALIZATION_CHANGED" );
 		CollectionShopEventsFrame:RegisterEvent( "INSPECT_READY" );
@@ -712,14 +704,14 @@ NS.AuctionFrameTab_OnClick = function( self, button, down, index ) -- AuctionFra
 end
 --
 NS.IsTabShown = function()
-	if AuctionFrameCollectionShop and AuctionFrame:IsShown() and PanelTemplates_GetSelectedTab( AuctionFrame ) == NS.AuctionFrameTab:GetID() then
+	if AuctionFrameCollectionShop and AuctionHouseFrame:IsShown() and PanelTemplates_GetSelectedTab( AuctionHouseFrame ) == NS.AuctionHouseFrameTab:GetID() then
 		return true;
 	else
 		return false;
 	end
 end
 --
-NS.SideDressUpFrameCloseButton_OnClick = function()
+NS.DressUpFrameCancelButton_OnClick = function()
 	if AuctionFrameCollectionShop and AuctionFrameCollectionShop:IsShown() then
 		AuctionFrameCollectionShop_FlyoutPanel:Reset();
 	end
@@ -729,13 +721,13 @@ end
 --------------------------------------------------------------------------------------------------------------------------------------------
 NS.Reset = function( filterOnClick )
 	CollectionShopEventsFrame:UnregisterEvent( "CHAT_MSG_SYSTEM" );
-	NS.scan:Reset(); -- Also Unregisters AUCTION_ITEM_LIST_UPDATE
+	NS.scan:Reset(); -- Also Unregisters auction house events
 	wipe( NS.auction.data.live.itemIds );
 	wipe( NS.auction.data.live.appearanceSources );
 	wipe( NS.auction.data.groups );
 	NS.disableFlyoutChecks = false;
 	NS.buyAll = false;
-	if AuctionFrame and not NS.IsTabShown() then -- Stop monitoring spec and UI errors, unset mode, and reset buyout tracking when tab is changed or Auction House closed
+	if AuctionHouseFrame and not NS.IsTabShown() then -- Stop monitoring spec and UI errors, unset mode, and reset buyout tracking when tab is changed or Auction House closed
 		CollectionShopEventsFrame:UnregisterEvent( "PLAYER_SPECIALIZATION_CHANGED" );
 		CollectionShopEventsFrame:UnregisterEvent( "INSPECT_READY" );
 		CollectionShopEventsFrame:UnregisterEvent( "UI_ERROR_MESSAGE" );
@@ -795,11 +787,12 @@ NS.Reset = function( filterOnClick )
 	NS.UpdateTimeSinceLastScan();
 	AuctionFrameCollectionShop_LiveCheckButton:Enable();
 	AuctionFrameCollectionShop_LiveCheckButton:SetChecked( NS.db["live"] );
+	--[[ Temporarily disabled ]] AuctionFrameCollectionShop_LiveCheckButton:Hide();
 	AuctionFrameCollectionShop_ScanButton:Reset();
 	AuctionFrameCollectionShop_ShopButton:Reset();
 	AuctionFrameCollectionShop_BuyAllButton:Reset();
 	AuctionFrameCollectionShop_FlyoutPanel:Reset( filterOnClick );
-	HideUIPanel( SideDressUpFrame );
+	HideUIPanel( DressUpFrame );
 end
 --
 NS.AuctionSortButtons_Action = function( action )
@@ -1089,7 +1082,7 @@ NS.UpdateTimeSinceLastScan = function()
 	local timeSinceLastGetAllScanText = ( function()
 		if NS.db["live"] then
 			return GREEN_FONT_COLOR_CODE .. L["Live"] .. FONT_COLOR_CODE_CLOSE;
-		elseif type( timeSinceLastGetAllScan ) ~= "number" or timeSinceLastGetAllScan > 900 then -- 900 sec = 15 min
+		elseif type( timeSinceLastGetAllScan ) ~= "number" or timeSinceLastGetAllScan > 1200 then -- 1200 sec = 20 min
 			return RED_FONT_COLOR_CODE .. ( timeSinceLastGetAllScan and NS.SecondsToStrTime( timeSinceLastGetAllScan ) or L["Never"] ) .. FONT_COLOR_CODE_CLOSE;
 		else
 			return HIGHLIGHT_FONT_COLOR_CODE .. NS.SecondsToStrTime( timeSinceLastGetAllScan ) .. FONT_COLOR_CODE_CLOSE;
@@ -1106,6 +1099,7 @@ NS.UpdateTitleText = function()
 	if NS.numAuctionsWon > 0 then
 		text[#text + 1] = NS.numAuctionsWon .. " " .. GREEN_FONT_COLOR_CODE .. ( NS.numAuctionsWon == 1 and L["Buyout"] or L["Buyouts"] ) .. FONT_COLOR_CODE_CLOSE .. " (" .. NS.MoneyToString( NS.copperAuctionsWon, HIGHLIGHT_FONT_COLOR_CODE ) .. ")";
 	end
+	AuctionHouseFrameTitleText:SetText( "" ); -- This is the Blizzard AH title
 	AuctionFrameCollectionShop_TitleText:SetText( table.concat( text, HIGHLIGHT_FONT_COLOR_CODE .. "   " .. FONT_COLOR_CODE_CLOSE ) );
 	AuctionFrameCollectionShop_BuyoutsMailButton:SetText( NS.numAuctionsWon );
 	if not NS.mode or NS.numAuctionsWon == 0 then
@@ -1153,11 +1147,10 @@ NS.AuctionGroup_OnClick = function( groupKey )
 		NS.scan.query.remaining = 1;
 		NS.scan.query.auction = auction;
 		NS.scan.query.auction.groupKey = groupKey;
-		NS.scan.query.name = NS.auction.data.groups[groupKey][2]; -- name(2)
-		NS.scan.query.page = 0;
+		NS.scan.query.searchString = NS.auction.data.groups[groupKey][2]; -- name(2)
 		NS.scan.query.rarity = auction[4]; -- quality/rarity(4)
 		NS.scan.query.exactMatch = true;
-		NS.scan.query.filterData = nil;
+		NS.scan.query.itemClassFilters = nil;
 		if NS.buyAll and groupKey == 1 then
 			AuctionFrameCollectionShop_ScrollFrame:SetVerticalScroll( 0 ); -- Scroll to top when first group is selected during Buy All
 		end
@@ -1282,7 +1275,7 @@ NS.AuctionGroup_Deselect = function()
 	wipe( NS.scan.query.auction );
 	AuctionFrameCollectionShop_ScrollFrame:Update();
 	if NS.mode == "MOUNTS" or NS.mode == "PETS" or NS.mode == "APPEARANCES" or NS.mode == "RECIPES" then
-		HideUIPanel( SideDressUpFrame );
+		HideUIPanel( DressUpFrame );
 		AuctionFrameCollectionShop_FlyoutPanel:Reset();
 	end
 end
@@ -1556,33 +1549,45 @@ end
 -- Scan
 --------------------------------------------------------------------------------------------------------------------------------------------
 function NS.scan:Reset()
-	CollectionShopEventsFrame:UnregisterEvent( "AUCTION_ITEM_LIST_UPDATE" );
+	CollectionShopEventsFrame:UnregisterEvent( "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" );
+	CollectionShopEventsFrame:UnregisterEvent( "AUCTION_HOUSE_THROTTLED_SPECIFIC_SEARCH_READY" );
+	CollectionShopEventsFrame:UnregisterEvent( "ITEM_SEARCH_RESULTS_UPDATED" );
+	CollectionShopEventsFrame:UnregisterEvent( "REPLICATE_ITEM_LIST_UPDATE" );
 	-- Check if GETALL scan was interupted
 	if self.type == "GETALL" and self.status == "scanning" then
-		if ( CanSendAuctionQuery() ) then
-			QueryAuctionItems( "CLEAR_BROWSE_FRAME_RESULTS", nil, nil, 0, false, nil, false, false, nil ); -- Prevents WoW from crashing on subsequent queries, not sure why
+		if ( C_AuctionHouse.IsThrottledMessageSystemReady() ) then
+			C_AuctionHouse.ReplicateItems( "CLEAR_BROWSE_FRAME_RESULTS", nil, nil, 0, false, nil, false, false ); -- Prevents WoW from crashing on subsequent queries, not sure why
 		end
 	end
 	--
 	self.query = {
+		searchString = "",
+		sorts = { sortOrder=0, reverseSort=false }, -- Buyout(4) doesn't work right so Price(0) is preferable
+		minLevel = nil,
+		maxLevel = nil,
+		-- filters = {}, -- This is recreated each time a browse query is sent
+		uncollectedOnly = false,
+		usableOnly = false,
+		upgradesOnly = false,
+		exactMatch = false,
+		qualities = {}, -- These are added to the filters table when sending a browse query
+		--
+		itemClassFilters = nil,
+		--
 		queue = {},
 		categoryName = nil,
 		subCategoryName = nil,
 		remaining = 1,
 		auction = {}, 	-- SELECT
-		name = "",
-		page = 0,
 		rarity = nil,
-		exactMatch = false,
-		filterData = nil,
-		qualities = {}, -- SHOP
-		totalPages = 0,
 		attempts = 1,
 		maxAttempts = 100,
+		--
+		browseResults = nil, -- This temporarily holds the browse results of a browse query and are removed 1-by-1 during item searches
 	};
 	self.type = nil;
 	self.status = "ready"; -- ready, scanning, selected, buying
-	self.ailu = "LISTEN";
+	self.triggerAuctionWon = nil;
 	self.selectedOwner = nil;
 end
 --
@@ -1617,7 +1622,7 @@ function NS.scan:Start( type )
 	elseif type == "SELECT" then
 		AuctionFrameCollectionShop_ShopButton:SetText( L["Abort"] );
 		self.query.qualities[self.query.rarity] = true;
-		self:QueryPageSend();
+		self:QueryBrowseSend();
 	elseif type == "SHOP" then
 		NS.JumbotronFrame_Message( L["Shopping"] );
 		NS.StatusFrame_Message( "..." );
@@ -1625,7 +1630,7 @@ function NS.scan:Start( type )
 		-- ALL MODES: Name Search
 		local nameSearch = strtrim( AuctionFrameCollectionShop_FlyoutPanel_NameSearchEditbox:GetText() );
 		if nameSearch ~= "" then
-			self.query.name = string.lower( nameSearch );
+			self.query.searchString = string.lower( nameSearch );
 		end
 		-- ALL MODES: Qualities
 		for i = 1, #NS.modeFilters[1] do
@@ -1668,10 +1673,10 @@ function NS.scan:Start( type )
 		--------------------------------------------------------------------------------------------------------------------------------------------
 		if NS.mode == "MOUNTS" then
 			if NS.db["live"] then
-				self.query.filterData = AuctionCategories[12].subCategories[5].filters; -- Miscellaneous => Mount
+				self.query.itemClassFilters = AuctionCategories[12].subCategories[5].filters; -- Miscellaneous => Mount
 				self.query.categoryName = AuctionCategories[12].name; -- Miscellaneous
 				self.query.subCategoryName = AuctionCategories[12].subCategories[5].name; -- Mount
-				self:QueryPageSend();
+				self:QueryBrowseSend();
 			else
 				self:ImportShopData();
 			end
@@ -1682,7 +1687,7 @@ function NS.scan:Start( type )
 				for i = 1, #AuctionCategories[10].subCategories do
 					if NS.db["modeFilters"][NS.mode][AuctionCategories[10].subCategories[i].name] then
 						table.insert( self.query.queue, function()
-							self.query.filterData = AuctionCategories[10].subCategories[i].filters; -- Battle Pets => Pet Family (or Companion Pets)
+							self.query.itemClassFilters = AuctionCategories[10].subCategories[i].filters; -- Battle Pets => Pet Family (or Companion Pets)
 							self.query.categoryName = AuctionCategories[10].name; -- Battle Pets
 							self.query.subCategoryName = AuctionCategories[10].subCategories[i].name; -- Pet Family (or Companion Pets)
 						end );
@@ -1702,7 +1707,7 @@ function NS.scan:Start( type )
 				--
 				self.query.remaining = #self.query.queue;
 				self.query.queue[1]();
-				self:QueryPageSend();
+				self:QueryBrowseSend();
 			else
 				self:ImportShopData();
 			end
@@ -1714,7 +1719,7 @@ function NS.scan:Start( type )
 					if NS.db["modeFilters"][NS.mode][NS.modeFilters[2][i][1]] then
 						local cat,subcat = unpack( NS.modeFilters[2][i][4] );
 						table.insert( self.query.queue, function()
-							self.query.filterData = AuctionCategories[cat].subCategories[subcat].filters; -- Category => Subcategory
+							self.query.itemClassFilters = AuctionCategories[cat].subCategories[subcat].filters; -- Category => Subcategory
 							self.query.categoryName = AuctionCategories[cat].name; -- Category
 							self.query.subCategoryName = AuctionCategories[cat].subCategories[subcat].name; -- Subcategory
 						end );
@@ -1722,7 +1727,7 @@ function NS.scan:Start( type )
 				end
 				self.query.remaining = #self.query.queue;
 				self.query.queue[1]();
-				self:QueryPageSend();
+				self:QueryBrowseSend();
 			else
 				self:ImportShopData();
 			end
@@ -1735,7 +1740,7 @@ function NS.scan:Start( type )
 					if NS.db["modeFilters"][NS.mode][NS.modeFilters[2][i][1]] then
 						local cat,subcat1,subcat2 = unpack( NS.modeFilters[2][i][4] );
 						table.insert( self.query.queue, function()
-							self.query.filterData = AuctionCategories[cat].subCategories[subcat1].subCategories[subcat2].filters; -- Category => Subcategory1 => Subcateogry2
+							self.query.itemClassFilters = AuctionCategories[cat].subCategories[subcat1].subCategories[subcat2].filters; -- Category => Subcategory1 => Subcateogry2
 							self.query.categoryName = AuctionCategories[cat].name; -- Category
 							self.query.subCategoryName = AuctionCategories[cat].subCategories[subcat1].name .. " > " .. AuctionCategories[cat].subCategories[subcat1].subCategories[subcat2].name; -- Subcategory1 > Subcategory2
 						end );
@@ -1743,7 +1748,7 @@ function NS.scan:Start( type )
 				end
 				self.query.remaining = #self.query.queue;
 				self.query.queue[1]();
-				self:QueryPageSend();
+				self:QueryBrowseSend();
 			else
 				if not NS.appearanceCollection.getAllReady then
 					self:UpdateAppearanceCollection();
@@ -1758,7 +1763,7 @@ function NS.scan:Start( type )
 					if NS.db["modeFilters"][NS.mode][NS.modeFilters[2][i][1]] then
 						local subcat = NS.modeFilters[2][i][4];
 						table.insert( self.query.queue, function()
-							self.query.filterData = AuctionCategories[9].subCategories[subcat].filters; -- Recipes => Profession
+							self.query.itemClassFilters = AuctionCategories[9].subCategories[subcat].filters; -- Recipes => Profession
 							self.query.categoryName = AuctionCategories[9].name; -- Recipes
 							self.query.subCategoryName = AuctionCategories[9].subCategories[subcat].name; -- Profession
 						end );
@@ -1767,7 +1772,7 @@ function NS.scan:Start( type )
 				--
 				self.query.remaining = #self.query.queue;
 				self.query.queue[1]();
-				self:QueryPageSend();
+				self:QueryBrowseSend();
 			else
 				self:ImportShopData();
 			end
@@ -1775,29 +1780,37 @@ function NS.scan:Start( type )
 	end
 end
 --
-function NS.scan:QueryPageSend()
+function NS.scan:QueryBrowseSend()
 	if self.status ~= "scanning" then return end
-	if CanSendAuctionQuery( "list" ) and self.ailu ~= "IGNORE" then
+	if C_AuctionHouse.IsThrottledMessageSystemReady() then
+		self.browseResults = nil;
 		self.query.attempts = 1; -- Set to default on successful attempt
-		local name = self.query.name;
-		local page = self.query.page;
-		local usable = false;
-		local rarity = self.query.rarity;
-		local getAll = false;
-		local exactMatch = self.query.exactMatch;
-		local filterData = self.query.filterData;
-		local minLevel,maxLevel;
-		SortAuctionClearSort( "list" );
-		if NS.db["maxItemPriceCopper"][NS.mode] > 0 or self.type == "SELECT" then
-			SortAuctionSetSort( "list", "buyout" );
-			SortAuctionApplySort( "list" );
-		end
-		CollectionShopEventsFrame:RegisterEvent( "AUCTION_ITEM_LIST_UPDATE" );
-		QueryAuctionItems( name, minLevel, maxLevel, page, usable, rarity, getAll, exactMatch, filterData );
+		local query = {};
+		query.searchString = self.query.searchString;
+		query.sorts = self.query.sorts;
+		query.minLevel = self.query.minLevel;
+		query.maxLevel = self.query.maxLevel;
+		--
+		query.filters = {};
+		if self.query.uncollectedOnly then query.filters[#query.filters + 1] = 0; end
+		if self.query.usableOnly then query.filters[#query.filters + 1] = 1; end
+		if self.query.upgradesOnly then query.filters[#query.filters + 1] = 2; end
+		if self.query.exactMatch then query.filters[#query.filters + 1] = 3; end
+		if self.query.qualities[0] then query.filters[#query.filters + 1] = 4; end
+		if self.query.qualities[1] then query.filters[#query.filters + 1] = 5; end
+		if self.query.qualities[2] then query.filters[#query.filters + 1] = 6; end
+		if self.query.qualities[3] then query.filters[#query.filters + 1] = 7; end
+		if self.query.qualities[4] then query.filters[#query.filters + 1] = 8; end
+		--
+		query.itemClassFilters = self.query.itemClassFilters;
+		--
+		CollectionShopEventsFrame:RegisterEvent( "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" );
+		CollectionShopEventsFrame:RegisterEvent( "AUCTION_HOUSE_THROTTLED_SPECIFIC_SEARCH_READY" );
+		C_AuctionHouse.SendBrowseQuery( query );
 	elseif self.query.attempts < self.query.maxAttempts then
 		-- Increment attempts, delay and reattempt
 		self.query.attempts = self.query.attempts + 1;
-		C_Timer.After( 0.10, function() self:QueryPageSend() end );
+		C_Timer.After( 0.10, function() self:QueryBrowseSend() end );
 	else
 		-- Abort
 		NS.Print( L["Could not query Auction House after several attempts. Please try again later."] );
@@ -1805,19 +1818,18 @@ function NS.scan:QueryPageSend()
 	end
 end
 --
+function NS.scan:QuerySearchSend()
+	local itemKey = self.browseResults[1]["itemKey"]; -- Pull first browse result because we'll start with first and remove them after retrieve
+	local sorts = { sortOrder=0, reverseSort=false };
+	local separateOwnerItems = false;
+	CollectionShopEventsFrame:RegisterEvent( "ITEM_SEARCH_RESULTS_UPDATED" );
+	C_AuctionHouse.SendSearchQuery( itemKey, sorts, separateOwnerItems );
+end
+--
 function NS.scan:QueryGetAllSend()
 	if self.status ~= "scanning" then return end
-	local canQuery, canMassQuery = CanSendAuctionQuery( "list" );
-	if canQuery and canMassQuery and self.ailu ~= "IGNORE" then
-		local name = "";
-		local page = 0;
-		local usable = false;
-		local getAll = true;
-		local exactMatch = false;
-		local minLevel,maxLevel,rarity,filterData;
-		SortAuctionClearSort( "list" );
-		CollectionShopEventsFrame:RegisterEvent( "AUCTION_ITEM_LIST_UPDATE" );
-		--
+	local canSendThrottledMessage = C_AuctionHouse.IsThrottledMessageSystemReady();
+	if canSendThrottledMessage then
 		if NS.db["getAllScan"][NS.realmName] then
 			NS.db["getAllScan"][NS.realmName] = nil;
 		end
@@ -1832,23 +1844,42 @@ function NS.scan:QueryGetAllSend()
 			["time"] = time(),
 		};
 		--
-		QueryAuctionItems( name, minLevel, maxLevel, page, usable, rarity, getAll, exactMatch, filterData );
+		CollectionShopEventsFrame:RegisterEvent( "REPLICATE_ITEM_LIST_UPDATE" );
+		C_AuctionHouse.ReplicateItems();
 	else
 		-- Abort
-		NS.Print( L["Blizzard allows a GetAll scan once every 15 minutes. Please try again later."] );
+		NS.Print( L["Blizzard allows a GetAll scan once per 20 minutes or per game client launch. Please try again later."] );
 		NS.Reset();
 	end
 end
 --
-function NS.scan:OnAuctionItemListUpdate() -- AUCTION_ITEM_LIST_UPDATE
-	CollectionShopEventsFrame:UnregisterEvent( "AUCTION_ITEM_LIST_UPDATE" );
-	if self.ailu == "AUCTION_WON" then self:AfterAuctionWon(); end
-	if self.ailu == "IGNORE" then self.ailu = "LISTEN"; return end
+function NS.scan:OnBrowseResultsUpdated() -- AUCTION_HOUSE_BROWSE_RESULTS_UPDATED
+	CollectionShopEventsFrame:UnregisterEvent( "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" );
+	-- Not really doing anything here right now.
+end
+--
+function NS.scan:OnThrottledSpecificSearchReady() -- AUCTION_HOUSE_THROTTLED_SPECIFIC_SEARCH_READY
+	CollectionShopEventsFrame:UnregisterEvent( "AUCTION_HOUSE_THROTTLED_SPECIFIC_SEARCH_READY" );
+	if self.status ~= "scanning" then return end
+	self:QueryBrowseRetrieve();
+end
+--
+function NS.scan:OnItemSearchResultsUpdated() -- ITEM_SEARCH_RESULTS_UPDATED
+	CollectionShopEventsFrame:UnregisterEvent( "ITEM_SEARCH_RESULTS_UPDATED" );
+	if self.triggerAuctionWon then
+		self.triggerAuctionWon = nil; -- reset to default
+		self:AfterAuctionWon();
+	else
+		if self.status ~= "scanning" then return end
+		self:QuerySearchRetrieve();
+	end
+end
+--
+function NS.scan:OnReplicateItemListUpdate() -- REPLICATE_ITEM_LIST_UPDATE
+	CollectionShopEventsFrame:UnregisterEvent( "REPLICATE_ITEM_LIST_UPDATE" );
 	if self.status ~= "scanning" then return end
 	if self.type == "GETALL" then
 		self:QueryGetAllRetrieve();
-	else
-		self:QueryPageRetrieve();
 	end
 end
 --
@@ -1871,9 +1902,115 @@ function NS.scan:AuctionItemType( itemId )
 	end
 end
 --
-function NS.scan:GetAuctionItemInfo( index )
+function NS.scan:GetSearchItemInfo( itemSearchResultIndex )
+	local data = ( self.type == "SHOP" and NS.auction.data.live ) or nil;
+	--
+	local browseResultInfo = self.browseResults[1];
+	local itemKey = browseResultInfo["itemKey"];
+	local resultInfo = C_AuctionHouse.GetItemSearchResultInfo( itemKey, itemSearchResultIndex );
+	local itemKeyInfo = C_AuctionHouse.GetItemKeyInfo( itemKey );
+	------------------------------------------------------------------------------
+	-- browseResultInfo ----------------------------------------------------------
+	------------------------------------------------------------------------------
+	-- itemKey	structure ItemKey
+	-- appearanceLink	string (nilable)
+	-- totalQuantity	number
+	-- minPrice	number
+	-- containsOwnerItem	boolean
+	------------------------------------------------------------------------------
+	-- resultInfo ----------------------------------------------------------------
+	------------------------------------------------------------------------------
+	-- itemKey	structure ItemKey
+	-- owners	string[]
+	-- timeLeft	Enum.AuctionHouseTimeLeftBand
+	-- auctionID	number
+	-- quantity	number
+	-- itemLink	string (nilable)
+	-- containsOwnerItem	boolean
+	-- containsAccountItem	boolean
+	-- containsSocketedItem	boolean
+	-- bidder	string (nilable)
+	-- minBid	number (nilable)
+	-- bidAmount	number (nilable)
+	-- buyoutAmount	number (nilable)
+	-- timeLeftSeconds	number (nilable)
+	------------------------------------------------------------------------------
+	-- itemKeyInfo ---------------------------------------------------------------
+	------------------------------------------------------------------------------
+	-- itemName	string
+	-- battlePetLink	string (nilable)
+	-- appearanceLink	string (nilable)
+	-- quality	number	Enum.ItemQuality
+	-- iconFileID	number	FileID
+	-- isPet	boolean
+	-- isCommodity	boolean
+	-- isEquipment	boolean
+	------------------------------------------------------------------------------
+	-- The pre 8.3 auction info --------------------------------------------------
+	------------------------------------------------------------------------------
+	-- _,texture,count,quality,_,level,levelColHeader,_,_,buyoutPrice,_,_,_,owner,ownerFullName,_,itemId
+	------------------------------------------------------------------------------
+	local texture = itemKeyInfo.iconFileID;
+	local quality = itemKeyInfo.quality;
+	local level = itemKey.itemLevel;
+	local buyoutPrice = resultInfo.buyoutAmount or 0;
+	local itemId = itemKey.itemID;
+	local itemLink;
+	if ( self.type == "SHOP" or self.type == "SELECT" ) and NS.db["maxItemPriceCopper"][NS.mode] > 0 and buyoutPrice > NS.db["maxItemPriceCopper"][NS.mode] then
+		return "maxprice";
+	elseif buyoutPrice > 0 and ( self.type ~= "SELECT" or buyoutPrice == self.query.auction[1] ) and ( quality == -1 or self.query.qualities[quality] ) then
+		local auctionItemType = self:AuctionItemType( itemId );
+		if not auctionItemType then return end -- Skip auctions that aren't the type we need
+		--
+		if self.query.qualities[quality] then
+			itemLink = resultInfo.itemLink; -- Ignore missing quality (-1) to force retry
+		end
+		--
+		if not itemLink then
+			return "retry";
+		else
+			if self.type == "SHOP" then
+				local appearanceID,sourceID;
+				--
+				if auctionItemType == "possible-appearance" then
+					if quality > 1 then -- Transmoggable gear is uncommon or higher quality
+						appearanceID,sourceID = NS.GetAppearanceSourceInfo( itemLink );
+						if not appearanceID then
+							return "retry-possible-appearance"; -- Retry for appearanceID or if item has none then prevent inclusion after max retries
+						end
+						if not NS.FindKeyByValue( data["appearanceSources"], sourceID ) then
+							data["appearanceSources"][#data["appearanceSources"] + 1] = sourceID; -- List of unique sources to update appearanceCollection
+						end
+					else
+						return nil; -- No poor and common quality items
+					end
+				end
+				--
+				if not data["itemIds"][itemId] then
+					data["itemIds"][itemId] = {}; -- Store auctions by itemId
+				end
+				-- Add auction
+				data["itemIds"][itemId][#data["itemIds"][itemId] + 1] = {
+					buyoutPrice, -- itemPrice
+					itemLink,
+					texture,
+					quality,
+					( not itemKeyInfo.isPet and level or ( auctionItemType == "recipe" and NS.recipeInfo[itemId][3] > 1 and NS.recipeInfo[itemId][3] ) or 1 ), -- requiresLevel -- requiredLevel(3)
+					appearanceID,
+					sourceID,
+				};
+			elseif self.type == "SELECT" and itemLink == self.query.auction[2] then -- itemLink(2)
+				self.selectedOwner = resultInfo.owners[1] or nil;
+				self.query.auction.auctionID = resultInfo.auctionID;
+				return "found";
+			end
+		end
+	end
+end
+--
+function NS.scan:GetReplicateItemInfo( index )
 	local data = ( self.type == "GETALL" and NS.db["getAllScan"][NS.realmName]["data"] ) or ( self.type == "SHOP" and NS.auction.data.live );
-	local _,texture,count,quality,_,level,levelColHeader,_,_,buyoutPrice,_,_,_,owner,ownerFullName,_,itemId = GetAuctionItemInfo( "list", index );
+	local _,texture,count,quality,_,level,levelColHeader,_,_,buyoutPrice,_,_,_,owner,ownerFullName,_,itemId = C_AuctionHouse.GetReplicateItemInfo( index );
 	local itemLink;
 	if ( self.type == "SHOP" or self.type == "SELECT" ) and NS.db["maxItemPriceCopper"][NS.mode] > 0 and buyoutPrice > NS.db["maxItemPriceCopper"][NS.mode] then
 		return "maxprice";
@@ -1882,7 +2019,7 @@ function NS.scan:GetAuctionItemInfo( index )
 		if not auctionItemType then return end -- Skip auctions that aren't the type we need
 		--
 		if self.query.qualities[quality] then
-			itemLink = GetAuctionItemLink( "list", index ); -- Ignore missing quality (-1) to force retry
+			itemLink = C_AuctionHouse.GetReplicateItemLink( index ); -- Ignore missing quality (-1) to force retry
 		end
 		--
 		if not itemLink then
@@ -1926,18 +2063,63 @@ function NS.scan:GetAuctionItemInfo( index )
 	end
 end
 --
-function NS.scan:QueryPageRetrieve()
+function NS.scan:QueryBrowseRetrieve()
 	if self.status ~= "scanning" then return end -- Scan interrupted
-	local batchAuctions, totalAuctions = GetNumAuctionItems( "list" );
-	self.query.totalPages = ceil( totalAuctions / NUM_AUCTION_ITEMS_PER_PAGE );
-	local auctionBatchNum,auctionBatchRetry,maxItemPriceExceeded,NextAuction,PageComplete;
+	--
+	if not self.browseResults then
+		self.browseResults = C_AuctionHouse.GetBrowseResults();
+		-- Note: It might be a good idea to remove items here based on whether maxItemPriceExceeded
+		-- SELECT scan removes browse results that don't have the same itemID
+		if self.type == "SELECT" then
+			local i = 1;
+			while i <= #self.browseResults do
+				if NS.scan.status ~= "scanning" then return end -- Check for Reset
+				--
+				if self.browseResults[i]["itemKey"]["itemID"] ~= self.query.auction[6] then -- itemID(6)
+					table.remove( self.browseResults, i ); -- Remove result from browse results
+				else
+					i = i + 1;
+				end
+			end
+		end
+	end
+	--
+	if #self.browseResults > 0 then
+		return self:QuerySearchSend();
+	else
+		-- Query complete
+		self.query.remaining = self.query.remaining - 1;
+		if self.query.remaining == 0 then
+			if self.type == "SHOP" then -- Live
+				if NS.mode == "APPEARANCES" then
+					self:UpdateAppearanceCollection(); -- SHOP scan "almost" complete
+				else
+					self:ImportShopData(); -- SHOP scan "almost" complete
+				end
+			else
+				self:Complete(); -- SELECT scan complete
+			end
+		else
+			self.query.queue[#self.query.queue - ( self.query.remaining - 1 )]();
+			self:QueryBrowseSend();
+		end
+	end
+end
+--
+function NS.scan:QuerySearchRetrieve()
+	if self.status ~= "scanning" then return end -- Scan interrupted
+	--
+	local totalAuctions = C_AuctionHouse.GetNumItemSearchResults(self.browseResults[1]["itemKey"]);
+	local batchAuctions = totalAuctions;
+	--
+	local auctionBatchNum,auctionBatchRetry,maxItemPriceExceeded,NextAuction,SearchRetrieveComplete;
 	--
 	if self.type == "SHOP" then
 		local categoryDesc = HIGHLIGHT_FONT_COLOR_CODE .. self.query.categoryName .. " > " .. self.query.subCategoryName .. FONT_COLOR_CODE_CLOSE;
-		if self.query.totalPages == 0 then
+		if #self.browseResults == 0 then
 			NS.StatusFrame_Message( string.format( L["Scanning %s: No matches"], categoryDesc ) );
 		else
-			NS.StatusFrame_Message( string.format( L["Scanning %s: Page %d of %d"], categoryDesc, ( self.query.page + 1 ), self.query.totalPages ) );
+			NS.StatusFrame_Message( string.format( L["Scanning %s: %d results so far..."], categoryDesc, #self.browseResults ) );
 		end
 	end
 	--
@@ -1945,7 +2127,7 @@ function NS.scan:QueryPageRetrieve()
 		if self.status ~= "scanning" then return end -- Scan interrupted
 		--
 		if not auctionBatchRetry.inProgress or ( auctionBatchRetry.inProgress and auctionBatchRetry.auctionBatchNum[auctionBatchNum] ) then -- Not currently retrying or retrying and match
-			local get = self:GetAuctionItemInfo( auctionBatchNum );
+			local get = self:GetSearchItemInfo( auctionBatchNum );
 			if get == "retry" or ( get == "retry-possible-appearance" and ( not auctionBatchRetry.inProgress or auctionBatchRetry.attempts < 10 ) ) then
 				-- Retry required
 				if not auctionBatchRetry.inProgress then
@@ -1958,14 +2140,13 @@ function NS.scan:QueryPageRetrieve()
 					-- MAX ITEM PRICE EXCEEDED!!!
 					--
 					maxItemPriceExceeded = true;
-					return PageComplete();
+					return SearchRetrieveComplete();
 				elseif get == "found" then
 					--
 					-- SELECT MATCH FOUND!!!
 					--
 					self.query.auction.found = true;
-					self.query.auction.index = auctionBatchNum;
-					return PageComplete();
+					return SearchRetrieveComplete();
 				elseif auctionBatchRetry.inProgress then
 					-- Retry successful (or max Appearance attempts)
 					auctionBatchRetry.count = auctionBatchRetry.count - 1;
@@ -1984,7 +2165,7 @@ function NS.scan:QueryPageRetrieve()
 				return C_Timer.After( after, NextAuction );
 			else
 				-- No Batch Retry
-				return PageComplete();
+				return SearchRetrieveComplete();
 			end
 		else
 			-- Auction Complete
@@ -1993,34 +2174,14 @@ function NS.scan:QueryPageRetrieve()
 		end
 	end
 	--
-	PageComplete = function()
-		if not maxItemPriceExceeded and ( self.type == "SHOP" or ( self.type == "SELECT" and not self.query.auction.found ) ) and self.query.page < ( self.query.totalPages - 1 ) then -- Subtract 1 because the first page is 0
-			-- Query next page
-			self.query.page = self.query.page + 1; -- Increment to next page
-			self:QueryPageSend(); -- Send query for next page to scan
-		else
-			-- Query complete
-			self.query.remaining = self.query.remaining - 1;
-			self.query.page = 0; -- Reset to default
-			if self.query.remaining == 0 then
-				if self.type == "SHOP" then -- Live
-					if NS.mode == "APPEARANCES" then
-						self:UpdateAppearanceCollection(); -- SHOP scan "almost" complete
-					else
-						self:ImportShopData(); -- SHOP scan "almost" complete
-					end
-				else
-					self:Complete(); -- SELECT scan complete
-				end
-			else
-				self.query.queue[#self.query.queue - ( self.query.remaining - 1 )]();
-				self:QueryPageSend();
-			end
-		end
+	SearchRetrieveComplete = function()
+		-- Search retrieve complete
+		table.remove( self.browseResults, 1 );
+		self:QueryBrowseRetrieve();
 	end
 	--
 	if batchAuctions == 0 then
-		PageComplete();
+		SearchRetrieveComplete();
 	else
 		auctionBatchNum = 1;
 		auctionBatchRetry = { inProgress = false, count = 0, attempts = 0, attemptsMax = 50, auctionBatchNum = {} };
@@ -2030,7 +2191,7 @@ end
 --
 function NS.scan:QueryGetAllRetrieve()
 	if self.status ~= "scanning" then return end -- Scan interrupted
-	local totalAuctions = GetNumAuctionItems( "list" );
+	local totalAuctions = C_AuctionHouse.GetNumReplicateItems();
 	local auctionNum,auctionBatchNum,auctionBatchSize,auctionBatchRetry,NextAuction;
 	--
 	NextAuction = function()
@@ -2038,7 +2199,7 @@ function NS.scan:QueryGetAllRetrieve()
 		--
 		if auctionNum <= totalAuctions then
 			if not auctionBatchRetry.inProgress or ( auctionBatchRetry.inProgress and auctionBatchRetry.auctionBatchNum[auctionBatchNum] ) then -- Not currently retrying or retrying and match
-				local get = self:GetAuctionItemInfo( auctionNum );
+				local get = self:GetReplicateItemInfo( auctionNum );
 				if get == "retry" or ( get == "retry-possible-appearance" and ( not auctionBatchRetry.inProgress or auctionBatchRetry.attempts < 10 ) ) then
 					-- Retry required
 					if not auctionBatchRetry.inProgress then
@@ -2215,7 +2376,7 @@ function NS.scan:ImportShopData()
 				discard = true;
 			elseif NS.db["maxItemPriceCopper"][NS.mode] ~= 0 and data[itemId][auctionNum][1] > NS.db["maxItemPriceCopper"][NS.mode] then
 				discard = true;
-			elseif not NS.db["live"] and self.query.name ~= "" and not string.find( string.lower( string.match( data[itemId][auctionNum][2], "%[([^%[%]]+)%]" ) ), self.query.name, nil, true ) then
+			elseif not NS.db["live"] and self.query.searchString ~= "" and not string.find( string.lower( string.match( data[itemId][auctionNum][2], "%[([^%[%]]+)%]" ) ), self.query.searchString, nil, true ) then
 				discard = true;
 			elseif NS.mode ~= "PETS" and not NS.db["modeFilters"][NS.mode][NS.modeFilters[5][1][1]] and data[itemId][auctionNum][5] > NS.linkLevel then -- misc(5), requiresLevel(1), key(1), requiresLevel(5)
 				discard = true;
@@ -2502,16 +2663,16 @@ function NS.scan:Complete( cancelMessage )
 			self.status = "selected";
 			if NS.mode ~= "TOYS" then
 				local dressableRecipe = ( NS.mode == "RECIPES" and IsDressableItem( self.query.auction[2] ) );
-				-- Hide Flyout Panel and Open or Close SideDressUpFrame
+				-- Hide Flyout Panel and Open or Close DressUpFrame
 				if NS.mode ~= "RECIPES" or dressableRecipe then
 					AuctionFrameCollectionShop_FlyoutPanel:Hide();
-					if not SideDressUpFrame:IsShown() then
+					if not DressUpFrame:IsShown() then
 						if NS.mode == "APPEARANCES" or NS.mode == "RECIPES" then
-							DressUpFrame_Show(SideDressUpFrame); -- Required to load the "player" mode for the dress up scene
+							DressUpFrame_Show(DressUpFrame); -- Required to load the "player" mode for the dress up scene
 						end
 					end
-				elseif NS.mode == "RECIPES" and SideDressUpFrame:IsShown() then
-					HideUIPanel( SideDressUpFrame );
+				elseif NS.mode == "RECIPES" and DressUpFrame:IsShown() then
+					HideUIPanel( DressUpFrame );
 					AuctionFrameCollectionShop_FlyoutPanel:Reset();
 				end
 				-- DressUp -- Delay to allow frame to initialize
@@ -2522,10 +2683,10 @@ function NS.scan:Complete( cancelMessage )
 						DressUpBattlePetLink( self.query.auction[2] ); -- itemLink(2)
 					elseif NS.mode == "APPEARANCES" or ( NS.mode == "RECIPES" and dressableRecipe ) then
 						if NS.db["undressCharacter"] then
-							SideDressUpFrame.ModelScene:GetPlayerActor():Undress();
+							DressUpFrame.ModelScene:GetPlayerActor():Undress();
 							PlaySound( 798 ); -- gsTitleOptionOK: Keeps the sound consistent with the ResetButton click below
 						else
-							SideDressUpFrame.ResetButton:Click(); -- ^^
+							DressUpFrameResetButton:Click(); -- ^^
 						end
 						DressUpVisual( self.query.auction[2] ); -- itemLink(2)
 					end
@@ -2559,8 +2720,8 @@ function NS.scan:Complete( cancelMessage )
 		-- GETALL: Clicked the "Scan" button
 		self.status = "ready";
 		collectgarbage( "collect" );
-		if ( CanSendAuctionQuery() ) then
-			QueryAuctionItems( "CLEAR_BROWSE_FRAME_RESULTS", nil, nil, 0, false, nil, false, false, nil ); -- Prevents WoW from crashing on subsequent queries, not sure why
+		if ( C_AuctionHouse.IsThrottledMessageSystemReady() ) then
+			C_AuctionHouse.ReplicateItems( "CLEAR_BROWSE_FRAME_RESULTS", nil, nil, 0, false, nil, false, false ); -- Prevents WoW from crashing on subsequent queries, not sure why
 		end
 		NS.JumbotronFrame_Message( L["Auction House scan complete. Ready"] );
 		NS.StatusFrame_Message( string.format( L["Blizzard allows a GetAll scan once every %s. Press \"Shop\""], RED_FONT_COLOR_CODE .. L["15 min"] .. FONT_COLOR_CODE_CLOSE ) );
@@ -2579,14 +2740,10 @@ end
 function NS.scan:OnChatMsgSystem( ... ) -- CHAT_MSG_SYSTEM
 	local arg1 = ...;
 	if not arg1 then return end
-	if arg1 == ERR_AUCTION_BID_PLACED then
-		-- Bid Acccepted.
-		self.ailu = "IGNORE"; -- Ignore the list update after "Bid accepted."
-		CollectionShopEventsFrame:RegisterEvent( "AUCTION_ITEM_LIST_UPDATE" );
-	elseif arg1 == string.format( ERR_AUCTION_WON_S, NS.auction.data.groups[self.query.auction.groupKey][2] ) then -- itemName(2)
+	if arg1 == string.format( ERR_AUCTION_WON_S, NS.auction.data.groups[self.query.auction.groupKey][2] ) then -- itemName(2)
 		-- You won an auction for %s
-		self.ailu = "AUCTION_WON"; -- Helps decide to Ignore or Listen to the list update after "You won an auction for %s"
-		CollectionShopEventsFrame:RegisterEvent( "AUCTION_ITEM_LIST_UPDATE" );
+		self.triggerAuctionWon = true; -- Used in handler for event below to trigger process for after "You won an auction for %s"
+		CollectionShopEventsFrame:RegisterEvent( "ITEM_SEARCH_RESULTS_UPDATED" );
 		CollectionShopEventsFrame:UnregisterEvent( "CHAT_MSG_SYSTEM" );
 	end
 end
@@ -2643,7 +2800,6 @@ function NS.scan:OnUIErrorMessage( ... ) -- UI_ERROR_MESSAGE
 end
 --
 function NS.scan:AfterAuctionWon()
-	self.ailu = "IGNORE";
 	-- Update buyouts and money spent
 	NS.numAuctionsWon = NS.numAuctionsWon + 1;
 	NS.copperAuctionsWon = NS.copperAuctionsWon + self.query.auction[1]; -- itemPrice(1)
@@ -2906,17 +3062,24 @@ NS.TextFrame( "Text", CollectionShopInterfaceOptionsPanel, L["Use either slash c
 	justifyV = "TOP",
 } );
 --------------------------------------------------------------------------------------------------------------------------------------------
--- "CollectionShop" AuctionFrame Tab (AuctionFrameCollectionShop)
+-- "CollectionShop" AuctionHouseFrame Tab (AuctionFrameCollectionShop)
 --------------------------------------------------------------------------------------------------------------------------------------------
-NS.Blizzard_AuctionUI_OnLoad = function()
+NS.Blizzard_AuctionHouseUI_OnLoad = function()
 	if AuctionFrameCollectionShop then return end -- Make absolute sure this code only runs once
 	--
 	NS.Frame( "AuctionFrameCollectionShop", UIParent, {
+		template = "AuctionHouseBackgroundTemplate",
 		topLevel = true,
 		hidden = true,
-		size = { 824, 447 }, --f:SetSize( 758, 447 ); 66 x removed from close button
+		size = { 824 - 30, 447 + 98 - 34 }, --f:SetSize( 758, 447 ); 66 x removed from close button
 		OnShow = NS.Reset,
 		OnHide = NS.Reset,
+		bg = { "3054898" }, -- Interface\\AuctionFrame\\AuctionHouseBackgrounds
+		OnLoad = function( self )
+			self.Bg:SetTexCoord( 0.2, 0.4, 0.4, 0.8 );
+			self.Bg:SetPoint( "TOPLEFT", 0, -60 );
+			self.Bg:SetPoint( "BOTTOMRIGHT", 0, -5 );
+		end,
 	} );
 	NS.Model = NS.Frame( "_DressUpModel", AuctionFrameCollectionShop, {
 		type = "DressUpModel",
@@ -2937,7 +3100,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 	} );
 	NS.TextFrame( "_Title", AuctionFrameCollectionShop, "", {
 		setPoint = {
-			{ "TOPLEFT", 74, -24 },
+			{ "TOPLEFT", 74, -24 + 12 },
 			{ "RIGHT", -20, 0 },
 		},
 		justifyH = "CENTER",
@@ -2945,7 +3108,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 	NS.CheckButton( "_UndressCharacterCheckButton", AuctionFrameCollectionShop, L["Undress Character"], {
 		template = "InterfaceOptionsSmallCheckButtonTemplate",
 		size = { 16, 16 },
-		setPoint = { "RIGHT", "#sibling", "RIGHT", -100, 0 },
+		setPoint = { "RIGHT", "#sibling", "RIGHT", -130, 0 },
 		tooltip = L["Show character with\nselected item only"],
 		db = "undressCharacter",
 	} );
@@ -2956,8 +3119,8 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 	} );
 	NS.Button( "_NameSortButton", AuctionFrameCollectionShop, NAME, {
 		template = "AuctionSortButtonTemplate",
-		size = { 297, 19 },
-		setPoint = { "TOPLEFT", 65, -52 },
+		size = { 287, 19 },
+		setPoint = { "TOPLEFT", 52, -40 },
 		OnClick = function( self )
 			NS.AuctionSortButton_OnClick( self, 2 );
 		end,
@@ -2995,11 +3158,11 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		end,
 	} );
 	NS.ScrollFrame( "_ScrollFrame", AuctionFrameCollectionShop, {
-		size = { 733, ( 30 * 9 - 5 ) },
+		size = { 733 - 19, ( 30 * 12 - 5 ) }, -- 30 x {number of rows}
 		setPoint = { "TOPLEFT", "$parent_NameSortButton", "BOTTOMLEFT", 1, -5 },
 		buttonTemplate = "AuctionFrameCollectionShop_ScrollFrameButtonTemplate",
 		update = {
-			numToDisplay = 9,
+			numToDisplay = 12, -- {number of rows}
 			buttonHeight = 30,
 			UpdateFunction = function( sf )
 				local items = NS.auction.data.groups;
@@ -3094,26 +3257,26 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 				NS.adjustScrollFrame = false;
 				if TSM_API and NS.db["tsmItemValueSource"] ~= "" then
 					NS.isPctItemValue = true;
-					AuctionFrameCollectionShop_NameSortButton:SetSize( 272, 19 );
+					AuctionFrameCollectionShop_NameSortButton:SetSize( 262, 19 );
 					AuctionFrameCollectionShop_CategorySortButton:SetSize( 152, 19 );
-					AuctionFrameCollectionShop_ItemPriceSortButton:SetSize( 170, 19 );
+					AuctionFrameCollectionShop_ItemPriceSortButton:SetSize( 161, 19 );
 					AuctionFrameCollectionShop_PctItemValueSortButton:Show();
 					for i = 1, self.numToDisplay do
-						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_Name"]:SetSize( 235, 30 );
+						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_Name"]:SetSize( 225, 30 );
 						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_Category"]:SetSize( 150, 30 );
-						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_ItemPrice"]:SetSize( 168, 30 );
+						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_ItemPrice"]:SetSize( 159, 30 );
 						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_PctItemValue"]:Show();
 					end
 				else
 					NS.isPctItemValue = false;
-					AuctionFrameCollectionShop_NameSortButton:SetSize( 297, 19 );
+					AuctionFrameCollectionShop_NameSortButton:SetSize( 287, 19 );
 					AuctionFrameCollectionShop_CategorySortButton:SetSize( 202, 19 );
-					AuctionFrameCollectionShop_ItemPriceSortButton:SetSize( 188, 19 );
+					AuctionFrameCollectionShop_ItemPriceSortButton:SetSize( 179, 19 );
 					AuctionFrameCollectionShop_PctItemValueSortButton:Hide();
 					for i = 1, self.numToDisplay do
-						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_Name"]:SetSize( 260, 30 );
+						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_Name"]:SetSize( 250, 30 );
 						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_Category"]:SetSize( 200, 30 );
-						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_ItemPrice"]:SetSize( 186, 30 );
+						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_ItemPrice"]:SetSize( 177, 30 );
 						_G["AuctionFrameCollectionShop_ScrollFrameButton" .. i .. "_PctItemValue"]:Hide();
 					end
 				end
@@ -3122,18 +3285,18 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 	} );
 	NS.TextFrame( "_JumbotronFrame", AuctionFrameCollectionShop, "", {
 		hidden = true,
-		size = { 733, ( 334 - 22 ) },
+		size = { 733 - 19, ( 334 - 22 ) },
 		setPoint = { "TOPLEFT", "$parent_ScrollFrame", "TOPLEFT" },
 		fontObject = "GameFontHighlightLarge",
 		justifyH = "CENTER",
 	} );
 	NS.Frame( "_ModeSelectionFrame", AuctionFrameCollectionShop, {
 		hidden = true,
-		size = { 733, ( 334 - 22 ) },
+		size = { 733 - 19, ( 334 - 22 ) },
 		setPoint = { "TOPLEFT", "$parent_ScrollFrame", "TOPLEFT" },
 	} );
 	NS.TextFrame( "_ModeHoverFrame", AuctionFrameCollectionShop_ModeSelectionFrame, "", {
-		size = { 733, 17 },
+		size = { 733 - 19, 17 },
 		setPoint = { "TOPLEFT", "$parent", "TOPLEFT", 0, ( -108 + 17 + 20 ) },
 		fontObject = "GameFontHighlightLarge",
 		justifyH = "CENTER",
@@ -3142,7 +3305,8 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		template = false,
 		size = { 96, 96 },
 		setPoint = { "TOPLEFT", "$parent", "TOPLEFT", 86.5, -108 },
-		normalTexture = 631718,
+		normalTexture = 132261, -- 631718 is the original mount journal icon
+		texCoord = { 1, 0, 0, 1 }, -- Flip horse head around to match Mount journal icon
 		OnClick = function ()
 			NS.SetMode( 1 ); -- MOUNTS
 		end,
@@ -3214,7 +3378,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		end,
 	} );
 	NS.Frame( "_DialogFrame", AuctionFrameCollectionShop, {
-		size = { 733, 64 },
+		size = { 733 - 19, 64 + 27 },
 		setPoint = { "TOP", "$parent_ScrollFrame", "BOTTOM" },
 	} );
 	NS.Frame( "_BuyoutFrame", AuctionFrameCollectionShop_DialogFrame, {
@@ -3273,7 +3437,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 				AuctionFrameCollectionShop_ShopButton:Disable();
 				AuctionFrameCollectionShop_BuyAllButton:Disable();
 				CollectionShopEventsFrame:RegisterEvent( "CHAT_MSG_SYSTEM" );
-				PlaceAuctionBid( "list", NS.scan.query.auction.index, NS.scan.query.auction[1] ); -- itemPrice(1)
+				C_AuctionHouse.PlaceBid( NS.scan.query.auction.auctionID, NS.scan.query.auction[1] ); -- itemPrice(1)
 			end
 		end,
 	} );
@@ -3283,8 +3447,8 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 	} );
 	NS.Button( "_CloseButton", AuctionFrameCollectionShop, CLOSE, {
 		size = { 80, 22 },
-		setPoint = { "BOTTOMRIGHT", 0, 14 },
-		OnClick = function() AuctionFrame_Hide() end,
+		setPoint = { "BOTTOMRIGHT", 0, -22 },
+		OnClick = function() C_AuctionHouse.CloseAuctionHouse() end,
 	} );
 	NS.Button( "_BuyAllButton", AuctionFrameCollectionShop, L["Buy All"], {
 		size = { 80, 22 },
@@ -3356,7 +3520,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		end,
 		OnLoad = function( self )
 			function self:Reset()
-				if NS.mode and not NS.db["live"] and ( not NS.db["getAllScan"][NS.realmName] or ( time() - NS.db["getAllScan"][NS.realmName]["time"] ) > 900 ) then
+				if NS.mode and not NS.db["live"] and ( not NS.db["getAllScan"][NS.realmName] or ( time() - NS.db["getAllScan"][NS.realmName]["time"] ) > 1200 ) then
 					self:Enable();
 				else
 					self:Disable();
@@ -3444,9 +3608,9 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 	} );
 	NS.Frame( "_FlyoutPanel", AuctionFrameCollectionShop, {
 		template = "BasicFrameTemplate",
-		size = { 247, 423 }, -- 274 with scrollbar, 247 without scrollbar
-		setPoint = { "LEFT", "$parent", "RIGHT", 8, -1 },
-		bg = { "Interface\\FrameGeneral\\UI-Background-Marble", true, true },
+		size = { 247, 423 + 112 }, -- 274 with scrollbar, 247 without scrollbar
+		setPoint = { "LEFT", "$parent", "RIGHT", 8, -13 },
+		bg = { "3054898" }, -- Interface\\AuctionFrame\\AuctionHouseBackgrounds
 		OnLoad = function( self )
 			function self:Reset( filterOnClick )
 				if not filterOnClick then
@@ -3460,6 +3624,11 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 					self:Hide();
 				end
 			end
+			self.Bg:SetTexCoord( 0.2, 0.4, 0.4, 0.8 );
+			self.Bg:SetPoint( "TOPLEFT", 0, 0 );
+			self.Bg:SetPoint( "BOTTOMRIGHT", 0, -5 );
+			self.Bg:SetHorizTile( false );
+			self.Bg:SetVertTile( false );
 			self.TitleText:SetWordWrap( false );
 			self.TitleText:SetPoint( "LEFT", 4, 0 );
 			self.TitleText:SetPoint( "RIGHT", -28, 0 );
@@ -3500,11 +3669,11 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 		end,
 	} );
 	NS.ScrollFrame( "_ScrollFrame", AuctionFrameCollectionShop_FlyoutPanel, {
-		size = { 242, ( 20 * 16 - 5 ) },
+		size = { 242, ( 20 * 21 - 5 ) }, -- 20 x {number of rows}
 		setPoint = { "TOPLEFT", 1, -47 },
 		buttonTemplate = "AuctionFrameCollectionShop_FlyoutPanel_ScrollFrameButtonTemplate",
 		update = {
-			numToDisplay = 16,
+			numToDisplay = 21, -- {number of rows}
 			buttonHeight = 20,
 			UpdateFunction = function( sf )
 				local items = NS.modeFiltersFlyout;
@@ -3580,7 +3749,7 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 	NS.Button( "_FlyoutPanelButton", AuctionFrameCollectionShop, nil, {
 		template = false,
 		size = { 28, 28 },
-		setPoint = { "TOPRIGHT", "$parent", "TOPRIGHT", 5, -34 },
+		setPoint = { "TOPRIGHT", "$parent", "TOPRIGHT", 5, -22 },
 		normalTexture = "Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Up",
 		pushedTexture = "Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Down",
 		highlightTexture = "Interface\\Buttons\\UI-Common-MouseHilight",
@@ -3599,25 +3768,29 @@ NS.Blizzard_AuctionUI_OnLoad = function()
 			self.FlyoutPanel.FlyoutPanelButton = self;
 		end,
 	} );
-	-- Add "CollectionShop" tab to AuctionFrame
-	local numTab = AuctionFrame.numTabs + 1;
-	NS.AuctionFrameTab = NS.Button( "AuctionFrameTab" .. numTab, AuctionFrame, NS.title, {
-		topLevel = true,
-		template = "AuctionTabTemplate",
-		setPoint = { "LEFT", "AuctionFrameTab" .. ( numTab - 1 ), "RIGHT", -8, 0 },
+	-- Set AuctionFrameCollectionShop inside AuctionHouseFrame
+	AuctionFrameCollectionShop:SetParent( AuctionHouseFrame );
+	AuctionFrameCollectionShop:SetPoint( "TOPLEFT" );
+	-- Add "CollectionShop" tab to AuctionHouseFrame
+	local numTab = #AuctionHouseFrame.Tabs + 1;
+	NS.AuctionHouseFrameTab = NS.Button( "CollectionShopTab", AuctionHouseFrame, NS.title, {
+		template = "AuctionHouseFrameDisplayModeTabTemplate",
 		OnLoad = function( self )
-			self:SetID( numTab );
+			self:SetID( numTab ); -- Easy way to compare with selected tab
+			AuctionHouseFrame.Tabs[numTab] = self; -- parentArray Tabs
+			AuctionHouseFrame.AuctionFrameCollectionShop = AuctionFrameCollectionShop; -- parentKey
+			self:SetPoint( "LEFT", AuctionHouseFrame.Tabs[#AuctionHouseFrame.Tabs - 1], "RIGHT", -15, 0 ); -- Align with previous tab
+			AuctionHouseFrameDisplayMode.CollectionShop = { "AuctionFrameCollectionShop" }; -- Define new display mode
+			self.displayMode = AuctionHouseFrameDisplayMode.CollectionShop; -- Assign new display mode to tab
+			AuctionHouseFrame.tabsForDisplayMode[self.displayMode] = numTab; -- Add manually because Blizz does this on AH load
 		end,
 	} );
-	PanelTemplates_SetNumTabs( AuctionFrame, numTab );
-	PanelTemplates_EnableTab( AuctionFrame, numTab );
-	-- Set AuctionFrameCollectionShop inside AuctionFrame
-	AuctionFrameCollectionShop:SetParent( AuctionFrame );
-	AuctionFrameCollectionShop:SetPoint( "TOPLEFT" );
+	PanelTemplates_SetNumTabs( AuctionHouseFrame, numTab );
+	PanelTemplates_EnableTab( AuctionHouseFrame, numTab );
 	-- Hook tab click
-	hooksecurefunc( "AuctionFrameTab_OnClick", NS.AuctionFrameTab_OnClick );
-	-- Hook SideDressUpModelCloseButton
-	SideDressUpFrameCloseButton:HookScript( "OnClick", NS.SideDressUpFrameCloseButton_OnClick );
+	hooksecurefunc( AuctionHouseFrame, "SetDisplayMode", NS.AuctionHouseFrame_SetDisplayMode );
+	-- Hook DressUpModelCancelButton
+	DressUpFrameCancelButton:HookScript( "OnClick", NS.DressUpFrameCancelButton_OnClick );
 	-- Add new appearance sources to appearanceCollection to prevent unnecessary source lookups
 	CollectionShopEventsFrame:RegisterEvent( "TRANSMOG_COLLECTION_SOURCE_ADDED" );
 end
@@ -3652,9 +3825,9 @@ NS.Frame( "CollectionShopEventsFrame", UIParent, {
 					end
 					--
 					NS.initialized = true;
-				elseif IsAddOnLoaded( "Blizzard_AuctionUI" ) then
+				elseif IsAddOnLoaded( "Blizzard_AuctionHouseUI" ) then
 					self:UnregisterEvent( "ADDON_LOADED" );
-					NS.Blizzard_AuctionUI_OnLoad();
+					NS.Blizzard_AuctionHouseUI_OnLoad();
 				end
 			end
 		elseif	event == "PLAYER_LOGIN"						then
@@ -3665,10 +3838,13 @@ NS.Frame( "CollectionShopEventsFrame", UIParent, {
 					NS.Print( msg );
 				end
 			end
-		elseif	event == "AUCTION_ITEM_LIST_UPDATE"			then	NS.scan:OnAuctionItemListUpdate();
-		elseif	event == "CHAT_MSG_SYSTEM"					then	NS.scan:OnChatMsgSystem( ... );
-		elseif	event == "UI_ERROR_MESSAGE"					then	NS.scan:OnUIErrorMessage( ... );
-		elseif	event == "TRANSMOG_COLLECTION_SOURCE_ADDED"	then
+		elseif	event == "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED"				then	NS.scan:OnBrowseResultsUpdated();
+		elseif	event == "AUCTION_HOUSE_THROTTLED_SPECIFIC_SEARCH_READY"	then	NS.scan:OnThrottledSpecificSearchReady();
+		elseif	event == "ITEM_SEARCH_RESULTS_UPDATED"						then	NS.scan:OnItemSearchResultsUpdated();
+		elseif	event == "REPLICATE_ITEM_LIST_UPDATE"						then	NS.scan:OnReplicateItemListUpdate();
+		elseif	event == "CHAT_MSG_SYSTEM"									then	NS.scan:OnChatMsgSystem( ... );
+		elseif	event == "UI_ERROR_MESSAGE"									then	NS.scan:OnUIErrorMessage( ... );
+		elseif	event == "TRANSMOG_COLLECTION_SOURCE_ADDED"					then
 			local arg1 = ...;
 			if not arg1 then return end
 			--
@@ -3683,7 +3859,7 @@ NS.Frame( "CollectionShopEventsFrame", UIParent, {
 			local arg1 = select( 1, ... );
 			if not arg1 then return end
 			if arg1 == "player" then
-				AuctionFrameTab1:Click(); -- Go to browse tab if player changes specs while using addon, AH links are based on spec
+				AuctionHouseFrameBuyTab:Click(); -- Go to browse tab if player changes specs while using addon, AH links are based on spec
 			end
 		elseif	event == "INSPECT_READY"					then
 			self:UnregisterEvent( "INSPECT_READY" );
