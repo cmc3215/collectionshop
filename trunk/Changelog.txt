@@ -1,3 +1,8 @@
+**4.02**
+
+- Release date: 05/09/2020
+- Bug fixed: Closing the DressUpFrame using the X at the top was not resetting the Shop Filters panel as it should.
+
 **4.01**
 
 - Release date: 05/09/2020

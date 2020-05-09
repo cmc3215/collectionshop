@@ -4,7 +4,7 @@
 local NS = select( 2, ... );
 local L = NS.localization;
 NS.releasePatch = "8.3.0";
-NS.versionString = "4.01";
+NS.versionString = "4.02";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -3800,6 +3800,7 @@ NS.Blizzard_AuctionHouseUI_OnLoad = function()
 	-- Hook tab click
 	hooksecurefunc( AuctionHouseFrame, "SetDisplayMode", NS.AuctionHouseFrame_SetDisplayMode );
 	-- Hook DressUpModelCancelButton
+	DressUpFrameCloseButton:HookScript( "OnClick", NS.DressUpFrameCancelButton_OnClick );
 	DressUpFrameCancelButton:HookScript( "OnClick", NS.DressUpFrameCancelButton_OnClick );
 	-- Add new appearance sources to appearanceCollection to prevent unnecessary source lookups
 	CollectionShopEventsFrame:RegisterEvent( "TRANSMOG_COLLECTION_SOURCE_ADDED" );
