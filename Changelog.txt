@@ -1,3 +1,8 @@
+**4.01**
+
+- Release date: 05/09/2020
+- Bug fixed: Battle Pet searches where a lower quality pet was cheapest but a higher quality was available was resulting in CollectionShop saying the auction was unavailable. This was because Blizzard's quality filters are somewhat broken for Battle Pets as the filter only works when selecting the highest quality the pet is available as. Workaround has been implemented.
+
 **4.0**
 
 - Release date: 05/08/2020
