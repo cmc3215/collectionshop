@@ -4,7 +4,7 @@
 local NS = select( 2, ... );
 local L = NS.localization;
 NS.releasePatch = "8.3.0";
-NS.versionString = "4.0";
+NS.versionString = "4.01";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -1621,7 +1621,17 @@ function NS.scan:Start( type )
 		self:QueryGetAllSend();
 	elseif type == "SELECT" then
 		AuctionFrameCollectionShop_ShopButton:SetText( L["Abort"] );
-		self.query.qualities[self.query.rarity] = true;
+		-- Blizzard Battle Pet searches don't technically respect the rarity filter.
+		-- Only the highest rarity available is filterable.
+		-- Example: pets available in green and blue will only show when filtering includes blue
+		if self.query.auction[6] == 82800 then -- Battle Pet cage - itemId(6)
+			for i = 1, 3 do
+				self.query.qualities[i] = true; -- Add all three pet qualities (common, uncommon, rare) to be sure we get a result if it exists
+			end
+		else
+			-- Items outside of Battle Pets should be OK with standard quality filtering
+			self.query.qualities[self.query.rarity] = true;
+		end
 		self:QueryBrowseSend();
 	elseif type == "SHOP" then
 		NS.JumbotronFrame_Message( L["Shopping"] );
