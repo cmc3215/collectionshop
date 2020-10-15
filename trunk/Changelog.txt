@@ -1,3 +1,9 @@
+**4.03**
+
+- Release date: 10/14/2020
+- Minor compatibility fixes for new expansions API changes.
+- TOC updated for patch 9.0.1.
+
 **4.02**
 
 - Release date: 05/09/2020
