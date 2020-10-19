@@ -1,3 +1,8 @@
+**4.04**
+
+- Release date: 10/19/2020
+- Workaround added: Internal auction error following a game client AUCTION_HOUSE_BROWSE_FAILURE event that is a Blizzard bug was resetting CollectionShop after purchasing an auction.
+
 **4.03**
 
 - Release date: 10/14/2020
