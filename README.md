@@ -6,7 +6,7 @@ Find and buy the lowest buyout Mounts, Pets, Toys, Appearances, and Recipes.
 
 *Incompatible with <a href="https://www.curseforge.com/wow/addons/auctioneer">Auctioneer</a> addon*
 
-<img alt="Screenshot 1" src="Screenshot1.png" width="400" height="400">
+<img alt="Screenshot 1" src="Screenshot1.jpg" width="310" height="146">
 
 Patch 8.3.0 brought a major overhaul to the Auction House. CollectionShop's Live scan feature is temporarily disabled until it can be fixed.
 
