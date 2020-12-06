@@ -8,7 +8,7 @@ Find and buy the lowest buyout Mounts, Pets, Toys, Appearances, and Recipes.
 
 <img alt="Screenshot 1" src="Screenshot1.jpg" width="310" height="146">
 
-Patch 8.3.0 brought a major overhaul to the Auction House. CollectionShop's Live scan feature is temporarily disabled until it can be fixed.
+**Patch 8.3.0 brought a major overhaul to the Auction House. CollectionShop's Live scan feature is temporarily disabled until it can be fixed.**
 
 ## Features
 * Standalone addon that creates it's own tab on the Auction House for collection shopping.
