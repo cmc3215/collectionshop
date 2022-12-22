@@ -3,8 +3,8 @@
 --------------------------------------------------------------------------------------------------------------------------------------------
 local NS = select( 2, ... );
 local L = NS.localization;
-NS.releasePatch = "9.0.1";
-NS.versionString = "4.04";
+NS.releasePatch = "10.0.2";
+NS.versionString = "4.07";
 NS.version = tonumber( NS.versionString );
 --
 NS.options = {};
@@ -12,7 +12,7 @@ NS.options = {};
 NS.initialized = false;
 NS.realmName = GetRealmName();
 NS.playerLoginMsg = {};
-NS.AuctionHouseFrameTab = nil;
+NS.AuctionHouseFrameTabID = NS.title .. "Tab";
 NS.scan = {};
 NS.modes = { "MOUNTS", "PETS", "TOYS", "APPEARANCES", "RECIPES" };
 NS.modeNames = { "Mounts", "Pets", "Toys", "Appearances", "Recipes" };
@@ -96,7 +96,7 @@ NS.skills = {
 	--
 	-- Recipes may be associated with any of these skill ids, but this list associates the specific skill id back to its base skill id.
 	-- http://www.wowhead.com/skills
-	--
+	-- 12/03/2022
 	-- name[baseSkillID] = baseSkillName
 	--
 	name = {
@@ -125,6 +125,8 @@ NS.skills = {
 	[2480] = 171, -- Draenor Alchemy
 	[2479] = 171, -- Legion Alchemy
 	[2478] = 171, -- Kul Tiran Alchemy
+	[2750] = 171, -- Shadowlands Alchemy
+	[2823] = 171, -- Dragon Isles Alchemy
 	-- Blacksmithing
 	[NS.craftingProfessions[2]] = 164, -- Blacksmithing
 	[164] = 164, -- Blacksmithing
@@ -136,6 +138,8 @@ NS.skills = {
 	[2472] = 164, -- Draenor Blacksmithing
 	[2454] = 164, -- Legion Blacksmithing
 	[2437] = 164, -- Kul Tiran Blacksmithing
+	[2751] = 164, -- Shadowlands Blacksmithing
+	[2822] = 164, -- Dragon Isles Blacksmithing
 	-- Enchanting
 	[NS.craftingProfessions[3]] = 333, -- Enchanting
 	[333] = 333, -- Enchanting
@@ -147,6 +151,8 @@ NS.skills = {
 	[2489] = 333, -- Pandaria Enchanting
 	[2487] = 333, -- Legion Enchanting
 	[2486] = 333, -- Kul Tiran Enchanting
+	[2753] = 333, -- Shadowlands Enchanting
+	[2825] = 333, -- Dragon Isles Enchanting
 	-- Engineering
 	[NS.craftingProfessions[4]] = 202, -- Engineering
 	[202] = 202, -- Engineering
@@ -158,6 +164,8 @@ NS.skills = {
 	[2501] = 202, -- Draenor Engineering
 	[2500] = 202, -- Legion Engineering
 	[2499] = 202, -- Kul Tiran Engineering
+	[2755] = 202, -- Shadowlands Engineering
+	[2827] = 202, -- Dragon Isles Engineering
 	-- Inscription
 	[NS.craftingProfessions[5]] = 773, -- Inscription
 	[773] = 773, -- Inscription
@@ -169,6 +177,8 @@ NS.skills = {
 	[2509] = 773, -- Draenor Inscription
 	[2508] = 773, -- Legion Inscription
 	[2507] = 773, -- Kul Tiran Inscription
+	[2756] = 773, -- Shadowlands Inscription
+	[2828] = 773, -- Dragon Isles Inscription
 	-- Jewelcrafting
 	[NS.craftingProfessions[6]] = 755, -- Jewelcrafting
 	[755] = 755, -- Jewelcrafting
@@ -180,6 +190,8 @@ NS.skills = {
 	[2519] = 755, -- Draenor Jewelcrafting
 	[2518] = 755, -- Legion Jewelcrafting
 	[2517] = 755, -- Kul Tiran Jewelcrafting
+	[2757] = 755, -- Shadowlands Jewelcrafting
+	[2829] = 755, -- Dragon Isles Jewelcrafting
 	-- Leatherworking
 	[NS.craftingProfessions[7]] = 165, -- Leatherworking
 	[165] = 165, -- Leatherworking
@@ -191,6 +203,8 @@ NS.skills = {
 	[2527] = 165, -- Draenor Leatherworking
 	[2526] = 165, -- Legion Leatherworking
 	[2525] = 165, -- Kul Tiran Leatherworking
+	[2758] = 165, -- Shadowlands Leatherworking
+	[2830] = 165, -- Dragon Isles Leatherworking
 	-- Tailoring
 	[NS.craftingProfessions[8]] = 197, -- Tailoring
 	[197] = 197, -- Tailoring
@@ -202,6 +216,8 @@ NS.skills = {
 	[2535] = 197, -- Draenor Tailoring
 	[2534] = 197, -- Legion Tailoring
 	[2533] = 197, -- Kul Tiran Tailoring
+	[2759] = 197, -- Shadowlands Tailoring
+	[2831] = 197, -- Dragon Isles Tailoring
 	-- Cooking
 	[NS.craftingProfessions[9]] = 185, -- Cooking
 	[185] = 185, -- Cooking
@@ -215,6 +231,8 @@ NS.skills = {
 	[2542] = 185, -- Legion Cooking
 	[2543] = 185, -- Draenor Cooking
 	[2541] = 185, -- Kul Tiran Cooking
+	[2752] = 185, -- Shadowlands Cooking
+	[2824] = 185, -- Dragon Isles Cooking
 	-- Archaeology
 	-- [794] = 794, -- Archaeology
 	-- Fishing
@@ -227,6 +245,8 @@ NS.skills = {
 	-- [2587] = 356, -- Draenor Fishing
 	-- [2586] = 356, -- Legion Fishing
 	-- [2585] = 356, -- Kul Tiran Fishing
+	-- [2754] = 356, -- Shadowlands Fishing
+	-- [2826] = 356, -- Dragon Isles Fishing
 	-- Herbalism
 	-- [182] = 182, -- Herbalism
 	-- [2556] = 182, -- Herbalism
@@ -237,6 +257,8 @@ NS.skills = {
 	-- [2551] = 182, -- Draenor Herbalism
 	-- [2550] = 182, -- Legion Herbalism
 	-- [2549] = 182, -- Kul Tiran Herbalism
+	-- [2760] = 182, -- Shadowlands Herbalism
+	-- [2832] = 182, -- Dragon Isles Herbalism
 	-- Mining
 	-- [186] = 186, -- Mining
 	-- [2572] = 186, -- Mining
@@ -247,6 +269,8 @@ NS.skills = {
 	-- [2567] = 186, -- Draenor Mining
 	-- [2566] = 186, -- Legion Mining
 	-- [2565] = 186, -- Kul Tiran Mining
+	-- [2761] = 186, -- Shadowlands Mining
+	-- [2833] = 186, -- Dragon Isles Mining
 	-- Skinning
 	-- [393] = 393, -- Skinning
 	-- [2564] = 393, -- Skinning
@@ -257,6 +281,8 @@ NS.skills = {
 	-- [2559] = 393, -- Draenor Skinning
 	-- [2558] = 393, -- Legion Skinning
 	-- [2557] = 393, -- Kul Tiran Skinning
+	-- [2762] = 393, -- Shadowlands Skinning
+	-- [2834] = 393, -- Dragon Isles Skinning
 };
 NS.ridingSpells = { 90265,34091,34090,33391,33388 }; -- Spells: Master Riding, Artisan Riding, Expert Riding, Journeyman Riding, Apprentice Riding
 for i = 1, #NS.ridingSpells do
@@ -268,7 +294,7 @@ for i = 1, #NS.ridingSpells do
 	end
 end
 NS.mountInfo = {
-	-- As of 05/08/2020
+	-- As of 12/03/2022
 	--[mountItemId] = { displayID, spellID }, -- creatureName -- itemName
 	[90655] = { 45797, 132036 }, -- Thundering Ruby Cloud Serpent -- Reins of the Thundering Ruby Cloud Serpent
 	[153594] = { 80513, 256123 }, -- Xiwyllag ATV -- Xiwyllag ATV
@@ -318,17 +344,27 @@ NS.mountInfo = {
 	[49290] = { 34655, 65917 }, -- Magic Rooster -- Magic Rooster Egg
 };
 NS.petInfo = {
-	-- As of 05/08/2020
+	-- As of 12/03/2022
 	--[companionPetItemId] = { speciesID, creatureID }, -- itemName
+	[201441] = { 3407, 192108 }, -- Scout
+	[201703] = { 3417, 198543 }, -- Pinkie
+	[193071] = { 3278, 189099 }, -- Pistachio
+	[200927] = { 3408, 198077 }, -- Petal
+	[198725] = { 3381, 194893 }, -- Gray Marmoni
+	[201707] = { 3416, 198511 }, -- Troubled Tome
+	[198726] = { 3380, 196409 }, -- Black Skitterbug
+	[191126] = { 3256,186844 }, -- Obsidian Whelpling
 	--[[ not in game ]] [173296] = { 0000, 000000}, -- Rikki's Pith Helmet
-	[170072] = { 2766, 155829}, -- Armored Vaultbot
-	[167810] = { 2763, 151632}, -- Slimy Hermit Crab
-	[167806] = { 2760, 151673}, -- Slimy Octopode
-	[167809] = { 2762, 151651}, -- Slimy Darkhunter
-	[167808] = { 2758, 151697}, -- Slimy Eel
-	[167805] = { 2757, 151700}, -- Slimy Otter
-	[167804] = { 2765, 151631}, -- Slimy Sea Slug
-	[167807] = { 2761, 151696}, -- Slimy Fangtooth
+	[185919] = { 3097, 178216 }, -- Flawless Amethyst Baubleworm
+	[180208] = { 2889, 170421 }, -- PHA7-YNX
+	[170072] = { 2766, 155829 }, -- Armored Vaultbot
+	[167810] = { 2763, 151632 }, -- Slimy Hermit Crab
+	[167806] = { 2760, 151673 }, -- Slimy Octopode
+	[167809] = { 2762, 151651 }, -- Slimy Darkhunter
+	[167808] = { 2758, 151697 }, -- Slimy Eel
+	[167805] = { 2757, 151700 }, -- Slimy Otter
+	[167804] = { 2765, 151631 }, -- Slimy Sea Slug
+	[167807] = { 2761, 151696 }, -- Slimy Fangtooth
 	[166487] = { 2552, 148979 }, -- Leatherwing Screecher
 	[152878] = { 2201, 139743 }, -- Enchanted Tiki Mask
 	[151645] = { 2001, 117340 }, -- Model D1-BB-L3R
@@ -511,79 +547,101 @@ NS.petInfo = {
 	[146953] = { 2042, 120397 }, -- Scraps
 };
 NS.toyInfo = {
-	-- As of 05/08/2020
+	-- As of 12/03/2022
 	--[toyItemId] = { catNum, subCatNum }, -- itemName
-	[168807] = { 6, 1 }, -- Wormhole Generator: Kul Tiras
-	[168808] = { 6, 1 }, -- Wormhole Generator: Zandalar
-	[166743] = { 12, 4 }, -- Blight Bomber
-	[166744] = { 12, 4 }, -- Glaive Tosser
-	[160740] = { 12, 4 }, -- Croak Crock
-	[160751] = { 12, 4 }, -- Dance of the Dead
-	[151652] = { 6, 1 }, -- Wormhole Generator: Argus
-	[144393] = { 12, 4 }, -- Portable Yak Wash
-	[142265] = { 12, 4 }, -- Big Red Raygun
-	[122681] = { 12, 4 }, -- Sternfathom's Pet Journal
-	[129956] = { 12, 4 }, -- Leather Love Seat
-	[130157] = { 12, 4 }, -- Syxsehnz Rod
-	[130169] = { 12, 4 }, -- Tournament Favor
-	[130171] = { 12, 4 }, -- Cursed Orb
-	[130191] = { 12, 4 }, -- Trapped Treasure Chest Kit
-	[130214] = { 12, 4 }, -- Worn Doll
-	[130232] = { 12, 4 }, -- Moonfeather Statue
-	[130251] = { 6, 8 }, -- JewelCraft
-	[130254] = { 12, 4 }, -- Chatterstone
-	[132518] = { 6, 1 }, -- Blingtron's Circuit Design Tutorial
-	[109167] = { 6, 1 }, -- Findle's Loot-A-Rang
-	[112059] = { 6, 1 }, -- Wormhole Centrifuge
-	[128536] = { 12, 4 }, -- Leylight Brazier
-	[128807] = { 12, 4 }, -- Coin of Many Faces
-	[87215] = { 6, 1 }, -- Wormhole Generator: Pandaria
-	[88531] = { 6, 5 }, -- Lao Chin's Last Mug
-	[108739] = { 12, 1 }, -- Pretty Draenor Pearl
-	[40727] = { 6, 1 }, -- Gnomish Gravity Well
-	[60854] = { 6, 1 }, -- Loot-A-Rang
-	[134007] = { 12, 4 }, -- Eternal Black Diamond Ring
-	[40768] = { 6, 1 }, -- MOLL-E
-	[45984] = { 12, 4 }, -- Unusual Compass
-	[48933] = { 6, 1 }, -- Wormhole Generator: Northrend
-	[52201] = { 12, 4 }, -- Muradin's Favor
-	[52253] = { 12, 4 }, -- Sylvanas' Music Box
-	[30542] = { 6, 1 }, -- Dimensional Ripper - Area 52
-	[30544] = { 6, 1 }, -- Ultrasafe Transporter: Toshley's Station
-	[18984] = { 6, 1 }, -- Dimensional Ripper - Everlook
-	[18986] = { 6, 1 }, -- Ultrasafe Transporter: Gadgetzan
-	[23767] = { 6, 1 }, -- Crashin' Thrashin' Robot
-	[108631] = { 12, 3 }, -- Crashin' Thrashin' Roller Controller
-	[108633] = { 12, 3 }, -- Crashin' Thrashin' Cannon Controller
-	[108634] = { 12, 3 }, -- Crashin' Thrashin' Mortar Controller
-	[108635] = { 12, 3 }, -- Crashin' Thrashin' Killdozer Controller
-	[17716] = { 6, 1 }, -- Snowmaster 9000
-	[140363] = { 12, 4 }, -- Pocket Fel Spreader
-	[1973] = { 12, 4 }, -- Orb of Deception
-	[18660] = { 6, 1 }, -- World Enlarger
+	[198156] = { 13, 4 }, -- Wyrmhole Generator
+	[193476] = { 13, 4 }, -- Gnoll Tent
+	[194059] = { 13, 4 }, -- Market Tent
+	[194052] = { 13, 4 }, -- Forlorn Funeral Pall
+	[172924] = { 6, 4 }, -- Wormhole Generator: Shadowlands
+	[193033] = { 13, 4 }, -- Convergent Prism
+	[200469] = { 13, 4 }, -- Khadgar's Disenchanting Rod
+	[198173] = { 13, 4 }, -- Atomic Recalibrator
+	[198206] = { 13, 4 }, -- Environmental Emulator
+	[198264] = { 13, 4 }, -- Centralized Precipitation Emitter
+	[194060] = { 13, 4 }, -- Dragonscale Expedition's Expedition Tent
+	[194056] = { 13, 4 }, -- Duck-Stuffed Duck Lovie
+	[40768] = { 6, 4 }, -- MOLL-E
+	[60854] = { 6, 4 }, -- Loot-A-Rang
+	[142265] = { 13, 4 }, -- Big Red Raygun
+	[192443] = { 13, 4 }, -- Element-Infused Rocket Helmet
+	[1973] = { 13, 4 }, -- Orb of Deception
+	[193478] = { 13, 4 }, -- Tuskarr Beanbag
+	[198227] = { 13, 4 }, -- Giggle Goggles
+	[52253] = { 13, 4 }, -- Sylvanas' Music Box
+	[128807] = { 13, 4 }, -- Coin of Many Faces
+	[129961] = { 11, 11 }, -- Flaming Hoop
+	[127707] = { 13, 4 }, -- Indestructible Bone
+	[193032] = { 13, 4 }, -- Jeweled Offering
+	[198720] = { 13, 4 }, -- Soft Purple Pillow
+	[194057] = { 13, 4 }, -- Cushion of Time Travel
+	[197719] = { 13, 4 }, -- Artisan's Sign
+	[194058] = { 13, 4 }, -- Cold Cushion
+	[40727] = { 6, 4 }, -- Gnomish Gravity Well
+	[112059] = { 6, 4 }, -- Wormhole Centrifuge
+	[132518] = { 6, 4 }, -- Blingtron's Circuit Design Tutorial
+	[30542] = { 6, 4 }, -- Dimensional Ripper - Area 52
+	[109183] = { 6, 4 }, -- World Shrinker
+	[18986] = { 6, 4 }, -- Ultrasafe Transporter: Gadgetzan
+	[48933] = { 6, 4 }, -- Wormhole Generator: Northrend
+	[45984] = { 13, 4 }, -- Unusual Compass
+	[87215] = { 6, 4 }, -- Wormhole Generator: Pandaria
+	[18660] = { 6, 4 }, -- World Enlarger
 	[36862] = { 6, 8 }, -- Worn Troll Dice
-	[36863] = { 6, 8 }, -- Decahedral Dwarven Dice
+	[130251] = { 6, 8 }, -- JewelCraft
 	[63269] = { 6, 8 }, -- Loaded Gnomish Dice
-	[71628] = { 6, 8 }, -- Sack of Starfish
-	[101571] = { 6, 8 }, -- Moonfang Shroud
-	[105898] = { 6, 8 }, -- Moonfang's Paw
-	[108745] = { 6, 1 }, -- Personal Hologram
-	[109183] = { 6, 1 }, -- World Shrinker
-	[116689] = { 12, 3 }, -- Pineapple Lounge Cushion
-	[116690] = { 12, 3 }, -- Safari Lounge Cushion
-	[116691] = { 12, 3 }, -- Zhevra Lounge Cushion
-	[116692] = { 12, 3 }, -- Fuzzy Green Lounge Cushion
-	[118427] = { 12, 4 }, -- Autographed Hearthstone Card
+	[198722] = { 13, 4 }, -- Small Triangular Pillow
+	[52201] = { 13, 4 }, -- Muradin's Favor
+	[36863] = { 6, 8 }, -- Decahedral Dwarven Dice
+	[134007] = { 13, 4 }, -- Eternal Black Diamond Ring
+	[140363] = { 13, 4 }, -- Pocket Fel Spreader
+	[30544] = { 6, 4 }, -- Ultrasafe Transporter: Toshley's Station
+	[109167] = { 6, 4 }, -- Findle's Loot-A-Rang
+	[198721] = { 13, 4 }, -- Skinny Reliquary Pillow
 	[119210] = { 6, 8 }, -- Hearthstone Board
-	[119212] = { 6, 8 }, -- Winning Hand
-	[127695] = { 12, 4 }, -- Spirit Wand
-	[127707] = { 12, 4 }, -- Indestructible Bone
-	[128310] = { 12, 1 }, -- Burning Blade
-	[128794] = { 12, 4 }, -- Sack of Spectral Spiders
+	[200142] = { 6, 4 }, -- Generous Goblin Grenade
+	[186973] = { 11, 11 }, -- Anima-ted Leash
+	[18984] = { 6, 4 }, -- Dimensional Ripper - Everlook
+	[151652] = { 6, 4 }, -- Wormhole Generator: Argus
+	[192495] = { 13, 4 }, -- Malfunctioning Stealthman 54
+	[105898] = { 6, 8 }, -- Moonfang's Paw
 	[129211] = { 6, 8 }, -- Steamy Romance Novel Kit
-	[129958] = { 10, 11 }, -- Leather Pet Leash
-	[129960] = { 10, 11 }, -- Leather Pet Bed
-	[129961] = { 10, 11 }, -- Flaming Hoop
+	[118427] = { 13, 4 }, -- Autographed Hearthstone Card
+	[108739] = { 13, 4 }, -- Pretty Draenor Pearl
+	[199897] = { 13, 4 }, -- Blue-Covered Beanbag
+	[128310] = { 13, 4 }, -- Burning Blade
+	[186985] = { 13, 4 }, -- Elusive Pet Treat
+	[127695] = { 13, 4 }, -- Spirit Wand
+	[128794] = { 13, 4 }, -- Sack of Spectral Spiders
+	[129956] = { 13, 4 }, -- Leather Love Seat
+	[23767] = { 6, 4 }, -- Crashin' Thrashin' Robot
+	[119212] = { 6, 8 }, -- Winning Hand
+	[199554] = { 13, 4 }, -- S.E.A.T.
+	[17716] = { 6, 4 }, -- Snowmaster 9000
+	[130254] = { 13, 4 }, -- Chatterstone
+	[166744] = { 13, 4 }, -- Glaive Tosser
+	[168808] = { 6, 4 }, -- Wormhole Generator: Zandalar
+	[130169] = { 13, 4 }, -- Tournament Favor
+	[101571] = { 6, 8 }, -- Moonfang Shroud
+	[168807] = { 6, 4 }, -- Wormhole Generator: Kul Tiras
+	[183900] = { 13, 4 }, -- Sinvyr Tea Set
+	[186686] = { 6, 8 }, -- Pallid Oracle Bones
+	[186702] = { 6, 4 }, -- Pallid Bone Flute
+	[116691] = { 13, 3 }, -- Zhevra Lounge Cushion
+	[144393] = { 13, 4 }, -- Portable Yak Wash
+	[108634] = { 13, 3 }, -- Crashin' Thrashin' Mortar Controller
+	[116690] = { 13, 3 }, -- Safari Lounge Cushion
+	[128536] = { 13, 4 }, -- Leylight Brazier
+	[108631] = { 13, 3 }, -- Crashin' Thrashin' Roller Controller
+	[129958] = { 11, 11 }, -- Leather Pet Leash
+	[108633] = { 13, 3 }, -- Crashin' Thrashin' Cannon Controller
+	[116692] = { 13, 3 }, -- Fuzzy Green Lounge Cushion
+	[108635] = { 13, 3 }, -- Crashin' Thrashin' Killdozer Controller
+	[166743] = { 13, 4 }, -- Blight Bomber
+	[108745] = { 6, 4 }, -- Personal Hologram
+	[129960] = { 11, 11 }, -- Leather Pet Bed
+	[71628] = { 6, 8 }, -- Sack of Starfish
+	[116689] = { 13, 3 }, -- Pineapple Lounge Cushion
 };
 NS.mountItemIds = {};
 NS.petItemIds = { 82800 };
@@ -609,6 +667,7 @@ end
 NS.SELECT_AN_AUCTION = function()
 	return string.format( L["Select an auction to buy or click \"Buy All\""] .. ( NS.mode == "APPEARANCES" and "\n" .. L["%sEach result is the lowest buyout auction for an|r %s"] or "" ), HIGHLIGHT_FONT_COLOR_CODE, NS.modeColorCode .. ( NS.shopAppearancesBy == "appearance" and L["Appearance"] or L["Appearance Source"] ) .. FONT_COLOR_CODE_CLOSE );
 end
+local LibAHTab = LibStub("LibAHTab-1-0");
 --------------------------------------------------------------------------------------------------------------------------------------------
 -- Record enabled addons (used for Auctioneer check)
 --------------------------------------------------------------------------------------------------------------------------------------------
@@ -670,6 +729,12 @@ NS.Upgrade = function()
 	if version < 4.0 then
 		wipe( NS.db["getAllScan"] ); -- Fixed bad recipe level table error in 3.02 and reset in 4.0 for massive AH changes in 8.3
 	end
+	-- 4.05
+	if version < 4.05 then
+		-- Add Appearance level ranges for Shadowlands and Dragonflight
+		NS.db["modeFilters"][NS.modes[4]]["itemRequiresLevels9"] = true;
+		NS.db["modeFilters"][NS.modes[4]]["itemRequiresLevels10"] = true;
+	end
 	--
 	NS.db["version"] = NS.version;
 end
@@ -685,28 +750,10 @@ NS.UpgradePerCharacter = function()
 	NS.dbpc["version"] = NS.version;
 end
 --------------------------------------------------------------------------------------------------------------------------------------------
--- AuctionHouseFrameCollectionShopTab / DressUpModel
+-- CollectionShopTab / DressUpModel
 --------------------------------------------------------------------------------------------------------------------------------------------
-NS.AuctionHouseFrame_SetDisplayMode = function( self, displayMode ) -- AuctionHouseFrame.SetDisplayMode
-	if displayMode == AuctionHouseFrameDisplayMode.CollectionShop then
-		NS.UpdateTitleText(); -- Clears the "Browse Auctions" Blizzard title text
-		NS.linkLevel = UnitLevel( "player" );
-		CollectionShopEventsFrame:RegisterEvent( "PLAYER_SPECIALIZATION_CHANGED" );
-		CollectionShopEventsFrame:RegisterEvent( "INSPECT_READY" );
-		CollectionShopEventsFrame:RegisterEvent( "UI_ERROR_MESSAGE" );
-		CollectionShopEventsFrame:RegisterEvent( "AUCTION_HOUSE_BROWSE_FAILURE" );
-		NotifyInspect( "player" );
-		-- Incompatible with Auctioneer
-		if addonEnabled["Auc-Advanced"] then
-			NS.Print( RED_FONT_COLOR_CODE .. L["Warning: This addon is incompatible with Auctioneer."] .. FONT_COLOR_CODE_CLOSE );
-		end
-	elseif AuctionFrameCollectionShop:IsShown() then
-		AuctionFrameCollectionShop:Hide();
-	end
-end
---
 NS.IsTabShown = function()
-	if AuctionFrameCollectionShop and AuctionHouseFrame:IsShown() and PanelTemplates_GetSelectedTab( AuctionHouseFrame ) == NS.AuctionHouseFrameTab:GetID() then
+	if AuctionFrameCollectionShop and AuctionFrameCollectionShop:IsShown() and AuctionHouseFrame:IsShown() then
 		return true;
 	else
 		return false;
@@ -722,7 +769,7 @@ end
 -- AuctionFrameCollectionShop
 --------------------------------------------------------------------------------------------------------------------------------------------
 NS.Reset = function( filterOnClick )
-	CollectionShopEventsFrame:UnregisterEvent( "CHAT_MSG_SYSTEM" );
+	CollectionShopEventsFrame:UnregisterEvent( "AUCTION_HOUSE_SHOW_FORMATTED_NOTIFICATION" );
 	NS.scan:Reset(); -- Also Unregisters auction house events
 	wipe( NS.auction.data.live.itemIds );
 	wipe( NS.auction.data.live.appearanceSources );
@@ -732,7 +779,7 @@ NS.Reset = function( filterOnClick )
 	if AuctionHouseFrame and not NS.IsTabShown() then -- Stop monitoring spec and UI errors, unset mode, and reset buyout tracking when tab is changed or Auction House closed
 		CollectionShopEventsFrame:UnregisterEvent( "PLAYER_SPECIALIZATION_CHANGED" );
 		CollectionShopEventsFrame:UnregisterEvent( "INSPECT_READY" );
-		CollectionShopEventsFrame:UnregisterEvent( "UI_ERROR_MESSAGE" );
+		CollectionShopEventsFrame:UnregisterEvent( "AUCTION_HOUSE_SHOW_ERROR" );
 		CollectionShopEventsFrame:UnregisterEvent( "AUCTION_HOUSE_BROWSE_FAILURE" );
 		NS.SetMode( nil, "noReset" );
 		if NS.numAuctionsWon > 0 and NS.db["auctionsWonReminder"] then
@@ -750,16 +797,16 @@ NS.Reset = function( filterOnClick )
 		end
 	end
 	if NS.mode then -- Max Item Price
-		AuctionFrameCollectionShop_MaxItemPriceFrameText:SetText( string.format( L["Max Item Price: %s"], ( NS.db["maxItemPriceCopper"][NS.mode] == 0 and L["None"] or NS.MoneyToString( NS.db["maxItemPriceCopper"][NS.mode] ) ) ) );
-		AuctionFrameCollectionShop_MaxItemPriceFrame:Show();
+		AuctionFrameCollectionShop_Title_MaxItemPriceFrameText:SetText( string.format( L["Max Item Price: %s"], ( NS.db["maxItemPriceCopper"][NS.mode] == 0 and L["None"] or NS.MoneyToString( NS.db["maxItemPriceCopper"][NS.mode] ) ) ) );
+		AuctionFrameCollectionShop_Title_MaxItemPriceFrame:Show();
 	else
-		AuctionFrameCollectionShop_MaxItemPriceFrame:Hide();
+		AuctionFrameCollectionShop_Title_MaxItemPriceFrame:Hide();
 	end
 	if NS.mode == "APPEARANCES" or NS.mode == "RECIPES" then -- Undress Character
-		AuctionFrameCollectionShop_UndressCharacterCheckButton:SetChecked( NS.db["undressCharacter"] );
-		AuctionFrameCollectionShop_UndressCharacterCheckButton:Show();
+		AuctionFrameCollectionShop_Title_UndressCharacterCheckButton:SetChecked( NS.db["undressCharacter"] );
+		AuctionFrameCollectionShop_Title_UndressCharacterCheckButton:Show();
 	else
-		AuctionFrameCollectionShop_UndressCharacterCheckButton:Hide();
+		AuctionFrameCollectionShop_Title_UndressCharacterCheckButton:Hide();
 	end
 	if NS.adjustScrollFrame then
 		AuctionFrameCollectionShop_ScrollFrame:Adjust(); -- Must go before sort buttons to set NS.isPctItemValue
@@ -867,8 +914,8 @@ NS.SetMode = function( mode, noReset )
 			{ common, uncommon, rare, epic },
 			( function()
 				local categories,categoryName = {};
-				for i = 1, #AuctionCategories[10].subCategories do
-					categoryName = AuctionCategories[10].subCategories[i].name;
+				for i = 1, #AuctionCategories[11].subCategories do
+					categoryName = AuctionCategories[11].subCategories[i].name;
 					categories[#categories + 1] = { categoryName, ( i == 11 and ( L["Include"] .. " " ) or "" ) .. categoryName, true }; -- Pet Family (or Include Companion Pets)
 				end
 				return categories;
@@ -895,13 +942,13 @@ NS.SetMode = function( mode, noReset )
 			{ common, uncommon, rare, epic },
 			( function()
 				local cnums = {
-					{ 6, 1 }, -- Consumables > Explosives and Devices
-					{ 6, 5 }, -- Consumables > Food & Drink
+					{ 6, 4 }, -- Consumables > Explosives and Devices
+					{ 6, 2 }, -- Consumables > Food & Drink
 					{ 6, 8 }, -- Consumables > Other
-					{ 12, 1 }, -- Miscellaneous > Junk
-					{ 10, 11 }, -- Battle Pets > Companion Pets
-					{ 12, 3 }, -- Miscellaneous > Holiday
-					{ 12, 4 }, -- Miscellaneous > Other
+					{ 13, 1 }, -- Miscellaneous > Junk
+					{ 11, 11 }, -- Battle Pets > Companion Pets
+					{ 13, 3 }, -- Miscellaneous > Holiday
+					{ 13, 4 }, -- Miscellaneous > Other
 				};
 				local categories,categoryName = {};
 				for i = 1, #cnums do
@@ -940,6 +987,7 @@ NS.SetMode = function( mode, noReset )
 					["WARLOCK"] = 4,
 					["HUNTER"] = 2,
 					["DEMONHUNTER"] = 3,
+					["EVOKER"] = 2,
 				};
 				local classArmorIndex = classArmorIndexes[select( 2, UnitClass( "player" ) )];
 				for i = 1, 4 do
@@ -950,13 +998,13 @@ NS.SetMode = function( mode, noReset )
 					end
 				end
 				-- Armor: Miscellaneous -> Cloak, Held In Off-hand, Shields, Shirt
-				auctionCategoryIndexes[BACKSLOT] = { 2, 5, 2 }; -- Appearances calls this "Back" - AuctionCategories[2].subCategories[5].subCategories[2].name
-				auctionCategoryIndexes[AuctionCategories[2].subCategories[5].subCategories[5].name] = { 2, 5, 5 };
+				auctionCategoryIndexes[BACKSLOT] = { 2, 5, 3 }; -- Appearances calls this "Back" - AuctionCategories[2].subCategories[5].subCategories[3].name
 				auctionCategoryIndexes[AuctionCategories[2].subCategories[5].subCategories[6].name] = { 2, 5, 6 };
 				auctionCategoryIndexes[AuctionCategories[2].subCategories[5].subCategories[7].name] = { 2, 5, 7 };
-				-- Categories
+				auctionCategoryIndexes[AuctionCategories[2].subCategories[5].subCategories[8].name] = { 2, 5, 8 };
+				-- Categories: 0=None, so start at 1 and minus 1 from total types
 				local categories,categoryName = {};
-				for i = 1, NS.NUM_TRANSMOG_COLLECTION_TYPES do
+				for i = 1, ( NS.NUM_TRANSMOG_COLLECTION_TYPES - 1 ) do
 					categoryName = C_TransmogCollection.GetCategoryInfo( i );
 					NS.appearanceCollection.categoryNames[i] = categoryName or false;
 					if categoryName and categoryName ~= TABARDSLOT and auctionCategoryIndexes[categoryName] then
@@ -971,14 +1019,16 @@ NS.SetMode = function( mode, noReset )
 				{ "collectedKnownSources", RED_FONT_COLOR_CODE .. L["Collected - Known Sources"] .. FONT_COLOR_CODE_CLOSE, false },
 			},
 			{
-				{ "itemRequiresLevels1", L["Level 1-60"], true },		-- Classic
-				{ "itemRequiresLevels2", L["Level 61-70"], true },		-- TBC
-				{ "itemRequiresLevels3", L["Level 71-80"], true },		-- WotLK
-				{ "itemRequiresLevels4", L["Level 81-85"], true },		-- Cata
-				{ "itemRequiresLevels5", L["Level 86-90"], true },		-- MoP
-				{ "itemRequiresLevels6", L["Level 91-100"], true },		-- WoD
-				{ "itemRequiresLevels7", L["Level 101-110"], true },	-- Legion
-				{ "itemRequiresLevels8", L["Level 111-120"], true },	-- Battle
+				{ "itemRequiresLevels1", L["Level 1-25"], true },	-- Classic
+				{ "itemRequiresLevels2", L["Level 25-27"], true },	-- TBC
+				{ "itemRequiresLevels3", L["Level 27-30"], true },	-- WotLK
+				{ "itemRequiresLevels4", L["Level 30-32"], true },	-- Cata
+				{ "itemRequiresLevels5", L["Level 32-35"], true },	-- MoP
+				{ "itemRequiresLevels6", L["Level 35-40"], true },	-- WoD
+				{ "itemRequiresLevels7", L["Level 40-45"], true },	-- Legion
+				{ "itemRequiresLevels8", L["Level 45-50"], true },	-- BfA
+				{ "itemRequiresLevels9", L["Level 50-60"], true },	-- Shadowlands
+				{ "itemRequiresLevels10", L["Level 60-70"], true },	-- Dragonflight
 			},
 			{
 				requiresLevel,
@@ -1102,7 +1152,7 @@ NS.UpdateTitleText = function()
 	if NS.numAuctionsWon > 0 then
 		text[#text + 1] = NS.numAuctionsWon .. " " .. GREEN_FONT_COLOR_CODE .. ( NS.numAuctionsWon == 1 and L["Buyout"] or L["Buyouts"] ) .. FONT_COLOR_CODE_CLOSE .. " (" .. NS.MoneyToString( NS.copperAuctionsWon, HIGHLIGHT_FONT_COLOR_CODE ) .. ")";
 	end
-	AuctionHouseFrameTitleText:SetText( "" ); -- This is the Blizzard AH title
+	AuctionHouseFrame.TitleContainer.TitleText:SetText( "" ); -- This is the Blizzard AH title
 	AuctionFrameCollectionShop_TitleText:SetText( table.concat( text, HIGHLIGHT_FONT_COLOR_CODE .. "   " .. FONT_COLOR_CODE_CLOSE ) );
 	AuctionFrameCollectionShop_BuyoutsMailButton:SetText( NS.numAuctionsWon );
 	if not NS.mode or NS.numAuctionsWon == 0 then
@@ -1328,41 +1378,41 @@ NS.NormalizeItemLink = function( itemLink )
 end
 --
 NS.FindInTooltip = function( itemLink, textColor, textPatterns, minLine, maxLine )
-	NS.GameTooltip:ClearLines();
-	NS.GameTooltip:SetHyperlink( itemLink );
-	local gtn,totalLines = NS.GameTooltip:GetName(),NS.GameTooltip:NumLines();
+	local tooltipData = C_TooltipInfo.GetHyperlink( itemLink );
+	TooltipUtil.SurfaceArgs( tooltipData );
+	for _, line in ipairs( tooltipData.lines ) do
+		TooltipUtil.SurfaceArgs( line );
+	end
+	local totalLines = tooltipData and #tooltipData.lines or 0;
+	--
 	local textLeft,textLeftText,textLeftColor = nil,nil,{};
-	if totalLines == 1 and _G[gtn ..'TextLeft' .. 1]:GetText() == RETRIEVING_ITEM_INFO then
+	--
+	if totalLines == 1 and tooltipData.lines[1].leftText == RETRIEVING_ITEM_INFO then
 		return "retry"; -- Retrieving Item Information
 	else
 		for line = 1, totalLines do
 			if maxLine and line > maxLine then break end
 			if not minLine or line >= minLine then
-				--
-				textLeft = _G[gtn ..'TextLeft' .. line];
-				textLeftText = textLeft:GetText();
-				if not textLeftText then return end
-				--
-				local textLeftColorMatch = false;
-				if textColor then
-					textLeftColor.r, textLeftColor.g, textLeftColor.b = textLeft:GetTextColor();
-					if textColor.r == math.floor( textLeftColor.r * 256 ) and textColor.g == math.floor( textLeftColor.g * 256 ) and textColor.b == math.floor( textLeftColor.b * 256 ) then
+				textLeftText = tooltipData.lines[line].leftText;
+				if textLeftText then
+					local textLeftColorMatch = false;
+					if textColor and textColor.r == math.floor( tooltipData.lines[line].leftColor.r * 255 ) and textColor.g == math.floor( tooltipData.lines[line].leftColor.g * 255 ) and textColor.b == math.floor( tooltipData.lines[line].leftColor.b * 255 ) then
 						textLeftColorMatch = true;
 					end
-				end
-				--
-				local textLeftPatternMatch = false;
-				if textPatterns and ( ( textColor and textLeftColorMatch ) or not textColor ) then
-					for i = 1, #textPatterns do
-						if string.match( textLeftText, textPatterns[i] ) then
-							textLeftPatternMatch = true;
-							break; -- Gotcha sucka!
+					--
+					local textLeftPatternMatch = false;
+					if textPatterns and ( ( textColor and textLeftColorMatch ) or not textColor ) then
+						for i = 1, #textPatterns do
+							if string.match( textLeftText, textPatterns[i] ) then
+								textLeftPatternMatch = true;
+								break; -- Gotcha sucka!
+							end
 						end
 					end
-				end
-				--
-				if ( ( textColor and textPatterns ) and ( textLeftColorMatch and textLeftPatternMatch ) ) or ( ( textColor and not textPatterns ) and textLeftColorMatch ) or ( ( textPatterns and not textColor ) and textLeftPatternMatch ) then
-					return textLeftText;
+					--
+					if ( ( textColor and textPatterns ) and ( textLeftColorMatch and textLeftPatternMatch ) ) or ( ( textColor and not textPatterns ) and textLeftColorMatch ) or ( ( textPatterns and not textColor ) and textLeftPatternMatch ) then
+						return textLeftText;
+					end
 				end
 			end
 		end
@@ -1592,7 +1642,6 @@ function NS.scan:Reset()
 	self.status = "ready"; -- ready, scanning, selected, buying
 	self.triggerAuctionWon = nil;
 	self.selectedOwner = nil;
-	self.ignoreInternalAuctionErrorAfterBrowseFailure = false;
 end
 --
 function NS.scan:Start( type )
@@ -1687,9 +1736,9 @@ function NS.scan:Start( type )
 		--------------------------------------------------------------------------------------------------------------------------------------------
 		if NS.mode == "MOUNTS" then
 			if NS.db["live"] then
-				self.query.itemClassFilters = AuctionCategories[12].subCategories[5].filters; -- Miscellaneous => Mount
-				self.query.categoryName = AuctionCategories[12].name; -- Miscellaneous
-				self.query.subCategoryName = AuctionCategories[12].subCategories[5].name; -- Mount
+				self.query.itemClassFilters = AuctionCategories[13].subCategories[5].filters; -- Miscellaneous => Mount
+				self.query.categoryName = AuctionCategories[13].name; -- Miscellaneous
+				self.query.subCategoryName = AuctionCategories[13].subCategories[5].name; -- Mount
 				self:QueryBrowseSend();
 			else
 				self:ImportShopData();
@@ -1698,12 +1747,12 @@ function NS.scan:Start( type )
 		elseif NS.mode == "PETS" then
 			if NS.db["live"] then
 				-- Auction Categories
-				for i = 1, #AuctionCategories[10].subCategories do
-					if NS.db["modeFilters"][NS.mode][AuctionCategories[10].subCategories[i].name] then
+				for i = 1, #AuctionCategories[11].subCategories do
+					if NS.db["modeFilters"][NS.mode][AuctionCategories[11].subCategories[i].name] then
 						table.insert( self.query.queue, function()
-							self.query.itemClassFilters = AuctionCategories[10].subCategories[i].filters; -- Battle Pets => Pet Family (or Companion Pets)
-							self.query.categoryName = AuctionCategories[10].name; -- Battle Pets
-							self.query.subCategoryName = AuctionCategories[10].subCategories[i].name; -- Pet Family (or Companion Pets)
+							self.query.itemClassFilters = AuctionCategories[11].subCategories[i].filters; -- Battle Pets => Pet Family (or Companion Pets)
+							self.query.categoryName = AuctionCategories[11].name; -- Battle Pets
+							self.query.subCategoryName = AuctionCategories[11].subCategories[i].name; -- Pet Family (or Companion Pets)
 						end );
 					end
 				end
@@ -1801,21 +1850,46 @@ function NS.scan:QueryBrowseSend()
 		self.query.attempts = 1; -- Set to default on successful attempt
 		local query = {};
 		query.searchString = self.query.searchString;
+		-- Enum.AuctionHouseSortOrder
+		-- 0	Price	
+		-- 1	Name	
+		-- 2	Level	
+		-- 3	Bid	
+		-- 4	Buyout	
+		-- 5	TimeRemaining	Only works for Owned auctions.
 		query.sorts = self.query.sorts;
+		--
 		query.minLevel = self.query.minLevel;
 		query.maxLevel = self.query.maxLevel;
 		--
 		query.filters = {};
-		if self.query.uncollectedOnly then query.filters[#query.filters + 1] = 0; end
-		if self.query.usableOnly then query.filters[#query.filters + 1] = 1; end
-		if self.query.upgradesOnly then query.filters[#query.filters + 1] = 2; end
-		if self.query.exactMatch then query.filters[#query.filters + 1] = 3; end
-		if self.query.qualities[0] then query.filters[#query.filters + 1] = 4; end
-		if self.query.qualities[1] then query.filters[#query.filters + 1] = 5; end
-		if self.query.qualities[2] then query.filters[#query.filters + 1] = 6; end
-		if self.query.qualities[3] then query.filters[#query.filters + 1] = 7; end
-		if self.query.qualities[4] then query.filters[#query.filters + 1] = 8; end
-		--
+		-- Enum.AuctionHouseFilter
+		-- 0	None
+		-- 1	UncollectedOnly
+		-- 2	UsableOnly
+		-- 3	UpgradesOnly
+		-- 4	ExactMatch
+		-- 5	PoorQuality
+		-- 6	CommonQuality
+		-- 7	UncommonQuality
+		-- 8	RareQuality
+		-- 9	EpicQuality
+		-- 10	LegendaryQuality
+		-- 11	ArtifactQuality
+		-- 12	LegendaryCraftedItemOnly
+		if self.query.uncollectedOnly then query.filters[#query.filters + 1] = 1; end
+		if self.query.usableOnly then query.filters[#query.filters + 1] = 2; end
+		if self.query.upgradesOnly then query.filters[#query.filters + 1] = 3; end
+		if self.query.exactMatch then query.filters[#query.filters + 1] = 4; end
+		if self.query.qualities[0] then query.filters[#query.filters + 1] = 5; end
+		if self.query.qualities[1] then query.filters[#query.filters + 1] = 6; end
+		if self.query.qualities[2] then query.filters[#query.filters + 1] = 7; end
+		if self.query.qualities[3] then query.filters[#query.filters + 1] = 8; end
+		if self.query.qualities[4] then query.filters[#query.filters + 1] = 9; end
+		-- AuctionHouseItemClassFilter
+		-- classID	number	ItemType
+		-- subClassID	number (nilable)
+		-- inventoryType	Enum.InventoryType (nilable)
 		query.itemClassFilters = self.query.itemClassFilters;
 		--
 		CollectionShopEventsFrame:RegisterEvent( "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" );
@@ -1870,11 +1944,6 @@ end
 function NS.scan:OnBrowseResultsUpdated() -- AUCTION_HOUSE_BROWSE_RESULTS_UPDATED
 	CollectionShopEventsFrame:UnregisterEvent( "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" );
 	-- Not really doing anything here right now.
-end
---
-function NS.scan:OnBrowseFailure() -- AUCTION_HOUSE_BROWSE_FAILURE
-	-- Beginning some time in early 2020, Blizzard AH is throwing an Internal Auction Error after buyouts along with a browse failure event. So, we're going to ignore one following browse failure
-	self.ignoreInternalAuctionErrorAfterBrowseFailure = true;
 end
 --
 function NS.scan:OnThrottledSystemReady() -- AUCTION_HOUSE_THROTTLED_SYSTEM_READY
@@ -1941,6 +2010,7 @@ function NS.scan:GetSearchItemInfo( itemSearchResultIndex )
 	------------------------------------------------------------------------------
 	-- itemKey	structure ItemKey
 	-- owners	string[]
+	-- totalNumberOfOwners number
 	-- timeLeft	Enum.AuctionHouseTimeLeftBand
 	-- auctionID	number
 	-- quantity	number
@@ -1954,8 +2024,17 @@ function NS.scan:GetSearchItemInfo( itemSearchResultIndex )
 	-- buyoutAmount	number (nilable)
 	-- timeLeftSeconds	number (nilable)
 	------------------------------------------------------------------------------
+	-- itemKey -------------------------------------------------------------------
+	------------------------------------------------------------------------------
+	-- itemID number
+	-- itemLevel number (default=0)
+	-- itemSuffix number (default=0)
+	-- battlePetSpeciesID number (default=0)
+	------------------------------------------------------------------------------
 	-- itemKeyInfo ---------------------------------------------------------------
 	------------------------------------------------------------------------------
+	-- itemID number
+	-- battlePetSpeciesID number
 	-- itemName	string
 	-- battlePetLink	string (nilable)
 	-- appearanceLink	string (nilable)
@@ -2041,7 +2120,7 @@ function NS.scan:GetReplicateItemInfo( index )
 			itemLink = C_AuctionHouse.GetReplicateItemLink( index ); -- Ignore missing quality (-1) to force retry
 		end
 		--
-		if not itemLink then
+		if not itemLink or not texture then
 			return "retry";
 		else
 			if self.type == "SHOP" or self.type == "GETALL" then
@@ -2418,7 +2497,7 @@ function NS.scan:ImportShopData()
 						speciesID,petLevel = NS.petInfo[itemId][1], 1;
 					end
 					-- Filter: category
-					category = AuctionCategories[10].subCategories[select( 3, C_PetJournal.GetPetInfoBySpeciesID( speciesID ) )].name;
+					category = AuctionCategories[11].subCategories[select( 3, C_PetJournal.GetPetInfoBySpeciesID( speciesID ) )].name;
 					if not NS.db["modeFilters"][NS.mode][category] then
 						discard = true;
 					end
@@ -2464,21 +2543,25 @@ function NS.scan:ImportShopData()
 				if not discard then
 					local itemRequiresLevel = data[itemId][auctionNum][5]; -- requiresLevel(5)
 					--
-					if itemRequiresLevel <= 60 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][1][1]] then -- itemRequiresLevels(4), Level 1-60(1), key(1)
+					if itemRequiresLevel <= 25 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][1][1]] then -- itemRequiresLevels(4), Level 1-25(1), key(1)
 						discard = true;
-					elseif itemRequiresLevel >= 61 and itemRequiresLevel <= 70 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][2][1]] then -- itemRequiresLevels(4), Level 61-70(2), key(1)
+					elseif itemRequiresLevel >= 25 and itemRequiresLevel <= 27 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][2][1]] then -- itemRequiresLevels(4), Level 25-27(2), key(1)
 						discard = true;
-					elseif itemRequiresLevel >= 71 and itemRequiresLevel <= 80 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][3][1]] then -- itemRequiresLevels(4), Level 71-80(3), key(1)
+					elseif itemRequiresLevel >= 27 and itemRequiresLevel <= 30 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][3][1]] then -- itemRequiresLevels(4), Level 27-30(3), key(1)
 						discard = true;
-					elseif itemRequiresLevel >= 81 and itemRequiresLevel <= 85 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][4][1]] then -- itemRequiresLevels(4), Level 81-85(4), key(1)
+					elseif itemRequiresLevel >= 30 and itemRequiresLevel <= 32 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][4][1]] then -- itemRequiresLevels(4), Level 30-32(4), key(1)
 						discard = true;
-					elseif itemRequiresLevel >= 86 and itemRequiresLevel <= 90 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][5][1]] then -- itemRequiresLevels(4), Level 86-90(5), key(1)
+					elseif itemRequiresLevel >= 32 and itemRequiresLevel <= 35 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][5][1]] then -- itemRequiresLevels(4), Level 32-35(5), key(1)
 						discard = true;
-					elseif itemRequiresLevel >= 91 and itemRequiresLevel <= 100 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][6][1]] then -- itemRequiresLevels(4), Level 91-100(6), key(1)
+					elseif itemRequiresLevel >= 35 and itemRequiresLevel <= 40 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][6][1]] then -- itemRequiresLevels(4), Level 35-40(6), key(1)
 						discard = true;
-					elseif itemRequiresLevel >= 101 and itemRequiresLevel <= 110 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][7][1]] then -- itemRequiresLevels(4), Level 101-110(7), key(1)
+					elseif itemRequiresLevel >= 40 and itemRequiresLevel <= 45 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][7][1]] then -- itemRequiresLevels(4), Level 40-45(7), key(1)
 						discard = true;
-					elseif itemRequiresLevel >= 111 and itemRequiresLevel <= 120 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][8][1]] then -- itemRequiresLevels(4), Level 111-120(8), key(1)
+					elseif itemRequiresLevel >= 45 and itemRequiresLevel <= 50 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][8][1]] then -- itemRequiresLevels(4), Level 45-50(8), key(1)
+						discard = true;
+					elseif itemRequiresLevel >= 50 and itemRequiresLevel <= 60 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][9][1]] then -- itemRequiresLevels(4), Level 50-60(9), key(1)
+						discard = true;
+					elseif itemRequiresLevel >= 60 and itemRequiresLevel <= 70 and not NS.db["modeFilters"][NS.mode][NS.modeFilters[4][10][1]] then -- itemRequiresLevels(4), Level 60-70(10), key(1)
 						discard = true;
 					end
 				end
@@ -2555,7 +2638,7 @@ function NS.scan:ImportShopData()
 		if itemNum <= #itemIds then
 			itemId = NS.mode == "APPEARANCES" and itemIds[itemNum][1] or itemIds[itemNum];
 			category =
-			--[[continued]]( NS.mode == "MOUNTS" and AuctionCategories[12].subCategories[5].name ) or
+			--[[continued]]( NS.mode == "MOUNTS" and AuctionCategories[13].subCategories[5].name ) or
 			--[[continued]]( NS.mode == "PETS" and "tbd" ) or
 			--[[continued]]( NS.mode == "TOYS" and AuctionCategories[NS.toyInfo[itemId][1]].subCategories[NS.toyInfo[itemId][2]].name .. " (" .. AuctionCategories[NS.toyInfo[itemId][1]].name .. ")" ) or
 			--[[continued]]( NS.mode == "APPEARANCES" and NS.appearanceCollection.categoryNames[itemIds[itemNum][2]] ) or
@@ -2681,7 +2764,7 @@ function NS.scan:Complete( cancelMessage )
 			-- FOUND
 			self.status = "selected";
 			if NS.mode ~= "TOYS" then
-				local dressableRecipe = ( NS.mode == "RECIPES" and IsDressableItem( self.query.auction[2] ) );
+				local dressableRecipe = ( NS.mode == "RECIPES" and C_Item.IsDressableItemByID( self.query.auction[2] ) );
 				-- Hide Flyout Panel and Open or Close DressUpFrame
 				if NS.mode ~= "RECIPES" or dressableRecipe then
 					AuctionFrameCollectionShop_FlyoutPanel:Hide();
@@ -2695,7 +2778,7 @@ function NS.scan:Complete( cancelMessage )
 					AuctionFrameCollectionShop_FlyoutPanel:Reset();
 				end
 				-- DressUp -- Delay to allow frame to initialize
-				C_Timer.After( 0.001, function()					
+				C_Timer.After( 0.001, function()
 					if NS.mode == "MOUNTS" then
 						DressUpMountLink( self.query.auction[2] ); -- itemLink(2)
 					elseif NS.mode == "PETS" then
@@ -2756,54 +2839,85 @@ function NS.scan:Complete( cancelMessage )
 	AuctionFrameCollectionShop_ShopButton:Reset();
 end
 --
-function NS.scan:OnChatMsgSystem( ... ) -- CHAT_MSG_SYSTEM
-	local arg1 = ...;
-	if not arg1 then return end
-	if arg1 == string.format( ERR_AUCTION_WON_S, NS.auction.data.groups[self.query.auction.groupKey][2] ) then -- itemName(2)
-		-- You won an auction for %s
+function NS.scan:OnShowFormattedNotification( ... ) -- AUCTION_HOUSE_SHOW_FORMATTED_NOTIFICATION
+	-- AUCTION_HOUSE_SHOW_FORMATTED_NOTIFICATION: notification, text, auctionID
+	-- Enum.AuctionHouseNotification
+	-- 0	BidPlaced
+	-- 1	AuctionRemoved
+	-- 2	AuctionWon
+	-- 3	AuctionOutbid
+	-- 4	AuctionSold
+	-- 5	AuctionExpired
+	local arg1, arg2, arg3 = ...;
+	if not arg1 or not arg2 or not arg3 then return end
+	if arg1 == 2 and arg2 == NS.auction.data.groups[self.query.auction.groupKey][2] and arg3 == NS.scan.query.auction.auctionID then -- itemName(2)
 		self.triggerAuctionWon = true; -- Used in handler for event below to trigger process for after "You won an auction for %s"
 		CollectionShopEventsFrame:RegisterEvent( "ITEM_SEARCH_RESULTS_UPDATED" );
-		CollectionShopEventsFrame:UnregisterEvent( "CHAT_MSG_SYSTEM" );
+		CollectionShopEventsFrame:UnregisterEvent( "AUCTION_HOUSE_SHOW_FORMATTED_NOTIFICATION" );
 	end
 end
 --
-function NS.scan:OnUIErrorMessage( ... ) -- UI_ERROR_MESSAGE
-	local arg2 = select( 2, ... );
-	if not arg2 then return end
-	-- Beginning some time in early 2020, Blizzard AH is throwing an Internal Auction Error after buyouts along with a browse failure event. So, we're going to ignore one following browse failure
-	if arg2 == ERR_AUCTION_DATABASE_ERROR and self.ignoreInternalAuctionErrorAfterBrowseFailure then
-		self.ignoreInternalAuctionErrorAfterBrowseFailure = false;
-		return -- Ignore internal auction house error once after AUCTION_HOUSE_BROWSE_FAILURE
-	end
+function NS.scan:OnShowError( ... ) -- AUCTION_HOUSE_SHOW_ERROR
+	-- AUCTION_HOUSE_SHOW_ERROR: error
+	-- Enum.AuctionHouseError
+	-- 0	NotEnoughMoney
+	-- 1	HigherBid
+	-- 2	BidIncrement
+	-- 3	BidOwn
+	-- 4	ItemNotFound
+	-- 5	RestrictedAccountTrial
+	-- 6	HasRestriction
+	-- 7	IsBusy
+	-- 8	Unavailable
+	-- 9	ItemHasQuote
+	-- 10	DatabaseError
+	-- 11	MinBid
+	-- 12	NotEnoughItems
+	-- 13	RepairItem
+	-- 14	UsedCharges
+	-- 15	QuestItem
+	-- 16	BoundItem
+	-- 17	ConjuredItem
+	-- 18	LimitedDurationItem
+	-- 19	IsBag
+	-- 20	EquippedBag
+	-- 21	WrappedItem
+	-- 22	LootItem
+	-- 23	DoubleBid
+	-- 24	FavoritesMaxed
+	-- 25	ItemNotAvailable
+	local arg1 = ( ... );
+	if not arg1 then return end
 	--
 	if self.status ~= "buying" then
 		-- Not Buying
-		if arg2 == ERR_AUCTION_DATABASE_ERROR then
-			NS.Print( RED_FONT_COLOR_CODE .. arg2 .. FONT_COLOR_CODE_CLOSE );
-			return NS.Reset(); -- Reset on Internal Auction Error
+		if arg1 == 10 then -- DatabaseError(10)
+			NS.Print( RED_FONT_COLOR_CODE .. ERR_AUCTION_DATABASE_ERROR .. FONT_COLOR_CODE_CLOSE );
+			return NS.Reset(); -- Reset on Auction House Database Error
 		else
-			return -- Ignore errors unexpected when not buying an auction
+			return -- Ignore errors unexpected when NOT buying an auction
 		end
 	elseif (
 		-- Buying
-		arg2 ~= ERR_AUCTION_DATABASE_ERROR and
-		arg2 ~= ERR_ITEM_NOT_FOUND and
-		arg2 ~= ERR_AUCTION_HIGHER_BID and
-		arg2 ~= ERR_AUCTION_BID_OWN and
-		arg2 ~= ERR_NOT_ENOUGH_MONEY and
-		arg2 ~= ERR_RESTRICTED_ACCOUNT and	-- Starter Edition account
-		arg2 ~= ERR_ITEM_MAX_COUNT ) then
-		return -- Ignore errors unexpected during buying an auction
+		arg1 ~= 0 and -- NotEnoughMoney
+		arg1 ~= 1 and -- HigherBid
+		arg1 ~= 3 and -- BidOwn
+		arg1 ~= 4 and -- ItemNotFound
+		arg1 ~= 5 and -- RestrictedAccountTrial
+		arg1 ~= 8 and -- Unavailable
+		arg1 ~= 10	  -- DatabaseError
+		) then
+		return -- Ignore errors unexpected when buying an auction
 	end
 	--
 	-- Handle error expected when buying an auction
 	--
-	CollectionShopEventsFrame:UnregisterEvent( "CHAT_MSG_SYSTEM" );
+	CollectionShopEventsFrame:UnregisterEvent( "AUCTION_HOUSE_SHOW_FORMATTED_NOTIFICATION" );
 	--
-	if arg2 == ERR_ITEM_NOT_FOUND or arg2 == ERR_AUCTION_HIGHER_BID or arg2 == ERR_AUCTION_BID_OWN then
-		if arg2 == ERR_ITEM_NOT_FOUND or arg2 == ERR_AUCTION_HIGHER_BID then
+	if arg1 == 1 or arg1 == 3 or arg1 == 4 then -- HigherBid(1), BidOwn(3), ItemNotFound(4)
+		if arg1 == 1 or arg2 == 4 then
 			NS.Print( RED_FONT_COLOR_CODE .. L["That auction is no longer available and has been removed"] .. FONT_COLOR_CODE_CLOSE );
-		elseif arg2 == ERR_AUCTION_BID_OWN then
+		elseif arg1 == 3 then
 			NS.Print( RED_FONT_COLOR_CODE .. L["That auction belonged to a character on your account and has been removed"] .. FONT_COLOR_CODE_CLOSE );
 		end
 		--
@@ -2815,7 +2929,13 @@ function NS.scan:OnUIErrorMessage( ... ) -- UI_ERROR_MESSAGE
 		end );
 	else
 		self.status = "ready";
-		NS.StatusFrame_Message( arg2 );
+		if arg1 == 0 then -- NotEnoughMoney(0)
+			NS.StatusFrame_Message( ERR_NOT_ENOUGH_MONEY );
+		elseif arg1 == 5 then -- RestrictedAccountTrial(5)
+			NS.StatusFrame_Message( ERR_RESTRICTED_ACCOUNT_TRIAL );
+		else -- Unavailable (8), DatabaseError(10)
+			NS.StatusFrame_Message( ERR_AUCTION_DATABASE_ERROR );
+		end
 		AuctionFrameCollectionShop_BuyAllButton:Enable();
 	end
 	--
@@ -2960,8 +3080,9 @@ NS.GetAppearanceSourceInfo = function( itemLink )
 	end
     NS.Model:Undress();
     NS.Model:TryOn( itemLink, slotId );
-    local sourceID = NS.Model:GetSlotTransmogSources( slotId );
-    if sourceID then
+    local itemTransmogInfo = NS.Model:GetItemTransmogInfo( slotId );
+    if itemTransmogInfo and itemTransmogInfo.appearanceID then
+		local sourceID = itemTransmogInfo.appearanceID;
 		local _,appearanceID = C_TransmogCollection.GetAppearanceSourceInfo( sourceID );
         return appearanceID, sourceID;
     else
@@ -3097,7 +3218,20 @@ NS.Blizzard_AuctionHouseUI_OnLoad = function()
 		topLevel = true,
 		hidden = true,
 		size = { 824 - 30, 447 + 98 - 34 }, --f:SetSize( 758, 447 ); 66 x removed from close button
-		OnShow = NS.Reset,
+		OnShow = function( self )
+			NS.UpdateTitleText(); -- Clears the "Browse Auctions" Blizzard title text
+			NS.linkLevel = UnitLevel( "player" );
+			CollectionShopEventsFrame:RegisterEvent( "PLAYER_SPECIALIZATION_CHANGED" );
+			CollectionShopEventsFrame:RegisterEvent( "INSPECT_READY" );
+			CollectionShopEventsFrame:RegisterEvent( "AUCTION_HOUSE_SHOW_ERROR" );
+			CollectionShopEventsFrame:RegisterEvent( "AUCTION_HOUSE_BROWSE_FAILURE" );
+			NotifyInspect( "player" );
+			-- Incompatible with Auctioneer
+			if addonEnabled["Auc-Advanced"] then
+				NS.Print( RED_FONT_COLOR_CODE .. L["Warning: This addon is incompatible with Auctioneer."] .. FONT_COLOR_CODE_CLOSE );
+			end
+			NS.Reset();
+		end,
 		OnHide = NS.Reset,
 		bg = { "3054898" }, -- Interface\\AuctionFrame\\AuctionHouseBackgrounds
 		OnLoad = function( self )
@@ -3112,34 +3246,25 @@ NS.Blizzard_AuctionHouseUI_OnLoad = function()
 			self:SetUnit( "player" );
 		end,
 	} );
-	NS.GameTooltip = NS.Frame( NS.addon .. "_GameTooltip", UIParent, {
-		topLevel = true,
-		type = "GameTooltip",
-		OnLoad = function( self )
-			self:SetOwner( UIParent, "ANCHOR_NONE" );
-			self:AddFontStrings(
-				self:CreateFontString( "$parentTextLeft1", nil, "GameTooltipText" ),
-				self:CreateFontString( "$parentTextRight1", nil, "GameTooltipText" )
-			);
-		end,
-	} );
 	NS.TextFrame( "_Title", AuctionFrameCollectionShop, "", {
 		setPoint = {
-			{ "TOPLEFT", 74, -24 + 12 },
+			{ "TOPLEFT", 60, -24 + 13 },
 			{ "RIGHT", -20, 0 },
 		},
 		justifyH = "CENTER",
+		OnLoad = function( self )
+			self:SetFrameLevel( 511 ); -- 1 higher than the default AuctionHouseFrame.TitlContainer which is 510.
+		end,
 	} );
-	NS.CheckButton( "_UndressCharacterCheckButton", AuctionFrameCollectionShop, L["Undress Character"], {
-		template = "InterfaceOptionsSmallCheckButtonTemplate",
+	NS.CheckButton( "_UndressCharacterCheckButton", AuctionFrameCollectionShop_Title, " " .. L["Undress Character"], {
 		size = { 16, 16 },
-		setPoint = { "RIGHT", "#sibling", "RIGHT", -130, 0 },
+		setPoint = { "RIGHT", "$parent", "RIGHT", -100, -1 },
 		tooltip = L["Show character with\nselected item only"],
 		db = "undressCharacter",
 	} );
-	NS.TextFrame( "_MaxItemPriceFrame", AuctionFrameCollectionShop, "", {
+	NS.TextFrame( "_MaxItemPriceFrame", AuctionFrameCollectionShop_Title, "", {
 		size = { 150, 16 },
-		setPoint = { "LEFT", "$parent_Title", "LEFT", 3, 0 },
+		setPoint = { "LEFT", "$parent", "LEFT", 3, 0 },
 		fontObject = "GameFontHighlightSmall",
 	} );
 	NS.Button( "_NameSortButton", AuctionFrameCollectionShop, NAME, {
@@ -3245,7 +3370,7 @@ NS.Blizzard_AuctionHouseUI_OnLoad = function()
 						_G[bn .. "_IconTexture"]:SetScript( "OnLeave", function() GameTooltip_Hide(); if not IsHighlightLocked() then b:UnlockHighlight(); end end );
 						_G[bn .. "_IconTexture"]:SetScript( "OnClick", OnClick );
 						_G[bn .. "_NameText"]:SetText( items[k][2] ); -- group name(2)
-						_G[bn .. "_NameText"]:SetTextColor( GetItemQualityColor( items[k][5][1][4] ) ); -- auctions(5), first auction(1), quality(4)
+						_G[bn .. "_NameText"]:SetTextColor( unpack( { GetItemQualityColor( items[k][5][1][4] ) }, 1, 3 ) ); -- auctions(5), first auction(1), quality(4)
 						_G[bn .. "_LvlText"]:SetText( ( ( NS.mode ~= "PETS" and NS.mode ~= "RECIPES" and items[k][6] > NS.linkLevel ) or ( NS.mode == "RECIPES" and items[k][8] ) ) and RED_FONT_COLOR_CODE .. items[k][6] .. FONT_COLOR_CODE_CLOSE or items[k][6] ); -- group lvl(6) requiresProfession(Level)(8)
 						--
 						local category = items[k][3];
@@ -3461,7 +3586,8 @@ NS.Blizzard_AuctionHouseUI_OnLoad = function()
 				AuctionFrameCollectionShop_ScanButton:Disable();
 				AuctionFrameCollectionShop_ShopButton:Disable();
 				AuctionFrameCollectionShop_BuyAllButton:Disable();
-				CollectionShopEventsFrame:RegisterEvent( "CHAT_MSG_SYSTEM" );
+				CollectionShopEventsFrame:RegisterEvent( "AUCTION_HOUSE_SHOW_FORMATTED_NOTIFICATION" );
+				--CollectionShopEventsFrame:RegisterEvent( "AUCTION_HOUSE_PURCHASE_COMPLETED" );
 				C_AuctionHouse.PlaceBid( NS.scan.query.auction.auctionID, NS.scan.query.auction[1] ); -- itemPrice(1)
 			end
 		end,
@@ -3561,7 +3687,6 @@ NS.Blizzard_AuctionHouseUI_OnLoad = function()
 		justifyH = "CENTER",
 	} );
 	NS.CheckButton( "_LiveCheckButton", AuctionFrameCollectionShop, L["Live"], {
-		template = "InterfaceOptionsSmallCheckButtonTemplate",
 		size = { 16, 16 },
 		setPoint = { "RIGHT", "$parent_ScanButton", "LEFT", -30, 0 },
 		tooltip = L["Scan Auction House live when\npressing \"Shop\" instead of\nusing GetAll scan data.\n\nLive scans only search\nthe pages required for the\nfilters you checked and may\nbe faster in certain modes or\nwhen using a low max price."],
@@ -3774,7 +3899,7 @@ NS.Blizzard_AuctionHouseUI_OnLoad = function()
 	NS.Button( "_FlyoutPanelButton", AuctionFrameCollectionShop, nil, {
 		template = false,
 		size = { 28, 28 },
-		setPoint = { "TOPRIGHT", "$parent", "TOPRIGHT", 5, -22 },
+		setPoint = { "TOPRIGHT", "$parent", "TOPRIGHT", 0, -36 },
 		normalTexture = "Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Up",
 		pushedTexture = "Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Down",
 		highlightTexture = "Interface\\Buttons\\UI-Common-MouseHilight",
@@ -3797,23 +3922,7 @@ NS.Blizzard_AuctionHouseUI_OnLoad = function()
 	AuctionFrameCollectionShop:SetParent( AuctionHouseFrame );
 	AuctionFrameCollectionShop:SetPoint( "TOPLEFT" );
 	-- Add "CollectionShop" tab to AuctionHouseFrame
-	local numTab = #AuctionHouseFrame.Tabs + 1;
-	NS.AuctionHouseFrameTab = NS.Button( "CollectionShopTab", AuctionHouseFrame, NS.title, {
-		template = "AuctionHouseFrameDisplayModeTabTemplate",
-		OnLoad = function( self )
-			self:SetID( numTab ); -- Easy way to compare with selected tab
-			AuctionHouseFrame.Tabs[numTab] = self; -- parentArray Tabs
-			AuctionHouseFrame.AuctionFrameCollectionShop = AuctionFrameCollectionShop; -- parentKey
-			self:SetPoint( "LEFT", AuctionHouseFrame.Tabs[#AuctionHouseFrame.Tabs - 1], "RIGHT", -15, 0 ); -- Align with previous tab
-			AuctionHouseFrameDisplayMode.CollectionShop = { "AuctionFrameCollectionShop" }; -- Define new display mode
-			self.displayMode = AuctionHouseFrameDisplayMode.CollectionShop; -- Assign new display mode to tab
-			AuctionHouseFrame.tabsForDisplayMode[self.displayMode] = numTab; -- Add manually because Blizz does this on AH load
-		end,
-	} );
-	PanelTemplates_SetNumTabs( AuctionHouseFrame, numTab );
-	PanelTemplates_EnableTab( AuctionHouseFrame, numTab );
-	-- Hook tab click
-	hooksecurefunc( AuctionHouseFrame, "SetDisplayMode", NS.AuctionHouseFrame_SetDisplayMode );
+	LibAHTab:CreateTab( NS.AuctionHouseFrameTabID, AuctionFrameCollectionShop, NS.title );
 	-- Hook DressUpModelCancelButton
 	DressUpFrameCloseButton:HookScript( "OnClick", NS.DressUpFrameCancelButton_OnClick );
 	DressUpFrameCancelButton:HookScript( "OnClick", NS.DressUpFrameCancelButton_OnClick );
@@ -3853,7 +3962,7 @@ NS.Frame( "CollectionShopEventsFrame", UIParent, {
 					NS.initialized = true;
 				elseif IsAddOnLoaded( "Blizzard_AuctionHouseUI" ) then
 					self:UnregisterEvent( "ADDON_LOADED" );
-					NS.Blizzard_AuctionHouseUI_OnLoad();
+					C_Timer.After( 0.1, NS.Blizzard_AuctionHouseUI_OnLoad ); -- Delay required as of 10.0.2
 				end
 			end
 		elseif	event == "PLAYER_LOGIN"						then
@@ -3869,8 +3978,8 @@ NS.Frame( "CollectionShopEventsFrame", UIParent, {
 		elseif	event == "AUCTION_HOUSE_BROWSE_FAILURE"						then	NS.scan:OnBrowseFailure();
 		elseif	event == "ITEM_SEARCH_RESULTS_UPDATED"						then	NS.scan:OnItemSearchResultsUpdated();
 		elseif	event == "REPLICATE_ITEM_LIST_UPDATE"						then	NS.scan:OnReplicateItemListUpdate();
-		elseif	event == "CHAT_MSG_SYSTEM"									then	NS.scan:OnChatMsgSystem( ... );
-		elseif	event == "UI_ERROR_MESSAGE"									then	NS.scan:OnUIErrorMessage( ... );
+		elseif	event == "AUCTION_HOUSE_SHOW_FORMATTED_NOTIFICATION"		then	NS.scan:OnShowFormattedNotification( ... );
+		elseif	event == "AUCTION_HOUSE_SHOW_ERROR"							then	NS.scan:OnShowError( ... );
 		elseif	event == "TRANSMOG_COLLECTION_SOURCE_ADDED"					then
 			local arg1 = ...;
 			if not arg1 then return end
